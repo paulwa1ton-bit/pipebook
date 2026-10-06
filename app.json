@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "PipeBook",
+    "slug": "pipebook",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "pipebook",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.pipebook.app"
+    },
+    "android": {
+      "package": "com.pipebook.app"
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": ["expo-router"],
+    "extra": {
+      "router": { "origin": false }
+    }
+  }
+}
