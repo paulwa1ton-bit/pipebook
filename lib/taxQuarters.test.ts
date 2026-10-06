@@ -20,7 +20,7 @@ test("quarters and deadlines", () => {
 
 test("summary counts income when paid (cash basis) and buckets expenses", () => {
   const job = (id: string, paidOn: string | undefined, status: Job["status"]): Job => ({
-    id, customerId: "c", title: "t", status, date: "2026-06-01", createdAt: "",
+    id, customerId: "c", title: "t", status, date: "2026-06-01", createdAt: "", updatedAt: "",
     paidOn, lineItems: [{ id: "l", kind: "labour", description: "x", quantity: 2, unitPricePence: 5000 }],
   });
   const jobs = [
@@ -29,9 +29,9 @@ test("summary counts income when paid (cash basis) and buckets expenses", () => 
     job("invoiced-only", undefined, "invoiced"),
   ];
   const expenses: Expense[] = [
-    { id: "e1", date: "2026-08-01", description: "Fittings", amountPence: 3000, category: "costOfGoods" },
-    { id: "e2", date: "2026-09-01", description: "Diesel", amountPence: 2000, category: "travelCosts" },
-    { id: "e3", date: "2026-10-06", description: "Next quarter", amountPence: 999, category: "otherExpenses" },
+    { id: "e1", date: "2026-08-01", description: "Fittings", amountPence: 3000, category: "costOfGoods", updatedAt: "" },
+    { id: "e2", date: "2026-09-01", description: "Diesel", amountPence: 2000, category: "travelCosts", updatedAt: "" },
+    { id: "e3", date: "2026-10-06", description: "Next quarter", amountPence: 999, category: "otherExpenses", updatedAt: "" },
   ];
   const s = summariseQuarter(quarterFor("2026-08-01"), jobs, expenses);
   assert.equal(s.paidJobCount, 1);

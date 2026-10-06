@@ -3,8 +3,11 @@ import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { colors } from "@/constants/theme";
+import { useCloudBackup } from "@/hooks/useCloudBackup";
 
 export default function RootLayout() {
+  useCloudBackup();
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>

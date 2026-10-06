@@ -22,6 +22,7 @@ export interface Customer {
   email?: string;
   address?: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface Job {
@@ -39,6 +40,7 @@ export interface Job {
   // spawns a reminder to win the repeat booking.
   reminderKind?: ReminderKind;
   createdAt: string;
+  updatedAt: string;
 }
 
 // Expense categories line up with the HMRC MTD quarterly update headings so
@@ -57,6 +59,7 @@ export interface Expense {
   description: string;
   amountPence: number;
   category: ExpenseCategory;
+  updatedAt: string;
 }
 
 export interface BusinessSettings {
@@ -66,4 +69,16 @@ export interface BusinessSettings {
   paymentTermsDays: number;
   nextInvoiceNumber: number;
   bankDetails?: string;
+  // Shown in the header of PDF invoices and quotes.
+  businessAddress?: string;
+  businessPhone?: string;
+  businessEmail?: string;
+  gasSafeNumber?: string;
+  logoDataUri?: string;
+  updatedAt: string;
+}
+
+export interface SyncedRecord {
+  id: string;
+  updatedAt: string;
 }

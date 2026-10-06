@@ -33,9 +33,9 @@ export default function JobsScreen() {
     [jobs],
   );
 
-  const addJob = () => {
+  const addJob = (status: JobStatus) => {
     if (!note.trim()) return;
-    const job = addJobFromDraft(parseQuickEntry(note, settings));
+    const job = addJobFromDraft(parseQuickEntry(note, settings), status);
     setNote("");
     router.push(`/job/${job.id}`);
   };
@@ -56,7 +56,8 @@ export default function JobsScreen() {
           placeholderTextColor={colors.textMuted}
           style={[styles.input, { minHeight: 80, textAlignVertical: "top", marginBottom: spacing.md }]}
         />
-        <Button label="Add job" onPress={addJob} disabled={!note.trim()} />
+        <Button label="Add finished job" onPress={() => addJob("done")} disabled={!note.trim()} />
+        <Button label="Save as quote" variant="secondary" onPress={() => addJob("quote")} disabled={!note.trim()} />
       </Card>
 
       {grouped.length === 0 && (

@@ -1,10 +1,13 @@
 import { useState } from "react";
-import { Alert, Pressable, ScrollView, Share, Text, View } from "react-native";
+import { Pressable, ScrollView, Share, Text, View } from "react-native";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useBookStore } from "@/store/bookStore";
 import { formatPence, jobTotalPence, lineTotalPence, poundsToPence } from "@/lib/money";
 import { buildInvoiceText } from "@/lib/invoice";
 import { REMINDER_LABELS } from "@/lib/reminders";
+import { shareDocument } from "@/lib/shareDocument";
+import { confirmAction, notify } from "@/lib/confirm";
+import type { DocumentKind } from "@/lib/documentHtml";
 import { Button, Card, Field, SectionTitle, styles } from "@/components/ui";
 import { colors, spacing } from "@/constants/theme";
 import type { LineItemKind } from "@/types/models";
@@ -31,21 +34,39 @@ export default function JobScreen() {
     setNewPrice("");
   };
 
-  const sendInvoice = async () => {
-    markInvoiced(job.id);
-    const fresh = useBookStore.getState().jobs.find((j) => j.id === job.id)!;
-    await Share.share({ message: buildInvoiceText(fresh, customer, settings) });
+  const latest = () => useBookStore.getState().jobs.find((j) => j.id === job.id)!;
+
+  const sendPdf = async (kind: DocumentKind) => {
+    if (kind === "invoice") markInvoiced(job.id);
+    try {
+      await shareDocument(kind, latest(), customer, settings);
+    } catch (err) {
+      console.warn("[job] PDF share failed:", err);
+      notify("Couldn't create the PDF", "Try again, or send it as a text message instead.");
+    }
   };
 
-  const confirmDelete = () =>
-    Alert.alert("Delete job?", "This can't be undone.", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: () => { deleteJob(job.id); router.back(); } },
-    ]);
+  const sendInvoiceText = async () => {
+    markInvoiced(job.id);
+    const message = buildInvoiceText(latest(), customer, settings);
+    try {
+      await Share.share({ message });
+    } catch {
+      // Some browsers have no share sheet - show the text so it can be copied.
+      notify("Invoice", message);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (await confirmAction("Delete job?", "This can't be undone.", "Delete")) {
+      deleteJob(job.id);
+      router.back();
+    }
+  };
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <Stack.Screen options={{ title: job.invoiceNumber ?? "Job" }} />
+      <Stack.Screen options={{ title: job.invoiceNumber ?? (job.status === "quote" ? "Quote" : "Job") }} />
 
       <Card>
         <Field label="Customer" value={customer?.name ?? ""} onChangeText={(name) => customer && updateCustomer(customer.id, { name })} />
@@ -53,7 +74,7 @@ export default function JobScreen() {
           onChangeText={(phone) => customer && updateCustomer(customer.id, { phone })} />
         <Field label="Address" value={customer?.address ?? ""}
           onChangeText={(address) => customer && updateCustomer(customer.id, { address })} />
-        <Field label="Work done" value={job.title} onChangeText={(title) => updateJob(job.id, { title })} />
+        <Field label={job.status === "quote" ? "Proposed work" : "Work done"} value={job.title} onChangeText={(title) => updateJob(job.id, { title })} />
         {job.reminderKind && (
           <Text style={[styles.muted, { color: colors.brand }]}>
             🔔 {REMINDER_LABELS[job.reminderKind]} reminder will be set for 12 months' time
@@ -95,14 +116,30 @@ export default function JobScreen() {
         <Button label="Add charge" variant="secondary" onPress={addLine} />
       </Card>
 
-      {(job.status === "quote" || job.status === "booked") && (
-        <Button label="Mark job done" onPress={() => updateJob(job.id, { status: "done" })} />
+      {job.status === "quote" && (
+        <>
+          <Button label="Send quote (PDF)" onPress={() => sendPdf("quote")} />
+          <Button label="Quote accepted - book it in" variant="secondary"
+            onPress={() => updateJob(job.id, { status: "booked" })} />
+        </>
       )}
-      {job.status !== "paid" && job.status !== "quote" && job.status !== "booked" && (
-        <Button label={job.invoiceNumber ? "Resend invoice" : "Send invoice"} onPress={sendInvoice} />
+      {(job.status === "quote" || job.status === "booked") && (
+        <Button label="Mark job done" variant={job.status === "quote" ? "secondary" : "primary"}
+          onPress={() => updateJob(job.id, { status: "done" })} />
+      )}
+      {(job.status === "done" || job.status === "invoiced") && (
+        <>
+          <Button label={job.invoiceNumber ? "Resend invoice (PDF)" : "Send invoice (PDF)"} onPress={() => sendPdf("invoice")} />
+          <Button label="Send as text message instead" variant="secondary" onPress={sendInvoiceText} />
+        </>
       )}
       {job.status === "invoiced" && <Button label="Mark paid" onPress={() => markPaid(job.id)} />}
-      {job.status === "paid" && <Text style={[styles.title, { color: colors.success, textAlign: "center", marginBottom: spacing.md }]}>✓ Paid</Text>}
+      {job.status === "paid" && (
+        <>
+          <Text style={[styles.title, { color: colors.success, textAlign: "center", marginBottom: spacing.md }]}>✓ Paid</Text>
+          <Button label="Send paid receipt (PDF)" variant="secondary" onPress={() => sendPdf("invoice")} />
+        </>
+      )}
       <Button label="Delete job" variant="danger" onPress={confirmDelete} />
     </ScrollView>
   );

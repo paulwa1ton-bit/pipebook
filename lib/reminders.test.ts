@@ -7,7 +7,7 @@ import type { Job } from "../types/models";
 
 const job = (id: string, date: string, extra: Partial<Job> = {}): Job => ({
   id, customerId: "c1", title: "Boiler service", status: "paid", date,
-  lineItems: [], createdAt: "", reminderKind: "boiler_service", ...extra,
+  lineItems: [], createdAt: "", updatedAt: "", reminderKind: "boiler_service", ...extra,
 });
 
 test("addMonths clamps to month end", () => {
@@ -18,7 +18,7 @@ test("addMonths clamps to month end", () => {
 test("latest job of a kind supersedes older ones and urgency is computed", () => {
   const reminders = buildReminders(
     [job("old", "2024-10-01"), job("new", "2025-10-20"), job("quote", "2026-01-01", { status: "quote" })],
-    [{ id: "c1", name: "Mr Patel", createdAt: "" }],
+    [{ id: "c1", name: "Mr Patel", createdAt: "", updatedAt: "" }],
     "2026-10-06",
   );
   assert.equal(reminders.length, 1);
