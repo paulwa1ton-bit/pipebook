@@ -33,12 +33,12 @@
         "origin": false
       },
       "firebase": {
-        "apiKey": "REPLACE_ME",
-        "authDomain": "REPLACE_ME",
-        "projectId": "REPLACE_ME",
-        "storageBucket": "REPLACE_ME",
-        "messagingSenderId": "REPLACE_ME",
-        "appId": "REPLACE_ME"
+        "apiKey": "AIzaSyCbPwNM2HBp_T6pYiLKmAby_6OA6_toaeY",
+        "authDomain": "pipebook-73016.firebaseapp.com",
+        "projectId": "pipebook-73016",
+        "storageBucket": "pipebook-73016.firebasestorage.app",
+        "messagingSenderId": "494892814503",
+        "appId": "1:494892814503:web:b06af8d2f2029cc3990b82"
       }
     }
   }
