@@ -1,4 +1,4 @@
-# PipeBook - Product Brief
+# Pipebook - Product Brief
 
 ## Who it's for
 Solo UK plumbers (and one-van heating engineers) who do their paperwork in the
@@ -29,8 +29,8 @@ priced per user.
 
 ## Roadmap
 1. **Validate**: 5-10 plumber interviews (script below), then put the MVP on their phones through Expo Go.
-2. **Paperwork polish**: PDF invoices and quotes with a logo, photo receipts for expenses, mileage logging.
-3. **Accounts and backup**: Firebase sign-in and cloud backup, so data survives a lost phone.
+2. **Paperwork polish**: ~~PDF invoices and quotes with a logo~~ (done), photo receipts for expenses, mileage logging.
+3. ~~**Accounts and backup**: Firebase sign-in and cloud backup, so data survives a lost phone.~~ (done; needs a Firebase project, see README)
 4. **Getting paid**: card or Open Banking payment links on invoices, automatic chasing of overdue invoices, deposits.
 5. **MTD submission**: register as HMRC-recognised software (developer hub, sandbox testing and production approval), then submit quarterly updates and the final declaration from the app. This is the subscription driver.
 6. **Certificates**: Gas Safe and CP12 records, Benchmark, unvented (G3), building regs notifications.

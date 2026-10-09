@@ -1,9 +1,13 @@
 import type { LineItem, ReminderKind } from "../types/models";
+import { hourlyLabourLine, partsLine } from "./pricing.ts";
 
 // Turns a quick dictated/typed note such as
 //   "Mrs Smith, replaced kitchen tap, 1 hour, £85 parts"
 // into a job draft. Comma-separated: the first chunk is the customer, chunks
 // with hours or £ amounts become line items, everything else is the job title.
+// Hours are charged at the hourly rate; any priced item that isn't labour or a
+// call-out is treated as a part the plumber supplied, so commission (if on) is
+// added to the price they said.
 // Dictation via the phone keyboard's mic produces exactly this kind of text,
 // so this works for voice entry before we add on-device speech recognition.
 
@@ -38,10 +42,13 @@ export function detectReminderKind(text: string): ReminderKind | undefined {
 
 export function parseQuickEntry(
   text: string,
-  rates: { hourlyRatePence: number; calloutPence: number },
+  rates: { hourlyRatePence: number; calloutPence: number; markupPercent?: number },
+  // When the customer has already been picked from the list, the note
+  // doesn't start with their name.
+  { customerChosen = false }: { customerChosen?: boolean } = {},
 ): QuickEntryDraft {
   const chunks = text.split(/[,;\n]/).map((c) => c.trim()).filter(Boolean);
-  const customerName = chunks.shift() ?? "";
+  const customerName = customerChosen ? "" : chunks.shift() ?? "";
   const titleParts: string[] = [];
   const lineItems: Omit<LineItem, "id">[] = [];
 
@@ -55,14 +62,9 @@ export function parseQuickEntry(
       } else if (/labou?r/.test(lower)) {
         lineItems.push({ kind: "labour", description: "Labour", quantity: 1, unitPricePence: pence });
       } else {
-        const label = chunk.replace(AMOUNT_RE, "").replace(/\s+/g, " ").trim();
-        const isParts = label === "" || /\b(parts?|materials?|bits)\b/i.test(label);
-        lineItems.push({
-          kind: isParts ? "parts" : "other",
-          description: isParts ? "Parts & materials" : capitalise(label),
-          quantity: 1,
-          unitPricePence: pence,
-        });
+        const label = capitalise(chunk.replace(AMOUNT_RE, "").replace(/\s+/g, " ").trim());
+        const generic = label === "" || /^(parts?|materials?|bits)( and materials)?$/i.test(label);
+        lineItems.push(partsLine(generic ? "Parts & materials" : label, pence, rates.markupPercent));
       }
       continue;
     }
@@ -71,12 +73,7 @@ export function parseQuickEntry(
     const minutes = chunk.match(MINUTES_RE);
     if (hours || minutes) {
       const total = (hours ? parseHours(hours[1]) : 0) + (minutes ? parseInt(minutes[1], 10) / 60 : 0);
-      lineItems.push({
-        kind: "labour",
-        description: "Labour",
-        quantity: Math.round(total * 100) / 100,
-        unitPricePence: rates.hourlyRatePence,
-      });
+      lineItems.push(hourlyLabourLine(total, rates.hourlyRatePence));
       continue;
     }
 

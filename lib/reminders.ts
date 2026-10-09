@@ -26,7 +26,7 @@ const DUE_SOON_DAYS = 30;
 export function buildReminders(jobs: Job[], customers: Customer[], today: string): Reminder[] {
   const latest = new Map<string, Job>();
   for (const job of jobs) {
-    if (!job.reminderKind || job.status === "quote" || job.status === "booked") continue;
+    if (!job.reminderKind || job.status === "quote" || job.status === "declined" || job.status === "booked") continue;
     const key = `${job.customerId}:${job.reminderKind}`;
     const existing = latest.get(key);
     if (!existing || job.date > existing.date) latest.set(key, job);

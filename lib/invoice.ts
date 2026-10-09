@@ -11,7 +11,7 @@ export function formatInvoiceNumber(n: number): string {
 export function buildInvoiceText(job: Job, customer: Customer | undefined, settings: BusinessSettings): string {
   const issued = job.invoicedOn ?? job.date;
   const lines = job.lineItems.map((item) => {
-    const qty = item.kind === "labour" && item.quantity !== 1 ? ` (${item.quantity} hrs)` : "";
+    const qty = item.hourly ? ` (${item.quantity} hrs @ ${formatPence(item.unitPricePence)}/hr)` : "";
     return `  ${item.description}${qty}: ${formatPence(lineTotalPence(item))}`;
   });
   return [
