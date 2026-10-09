@@ -1,38 +1,23 @@
-import { useState } from "react";
-import { Pressable, ScrollView, Share, Text, View } from "react-native";
+import { ScrollView, Share, Text } from "react-native";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useBookStore } from "@/store/bookStore";
-import { formatPence, jobTotalPence, lineTotalPence, poundsToPence } from "@/lib/money";
 import { buildInvoiceText } from "@/lib/invoice";
 import { REMINDER_LABELS } from "@/lib/reminders";
 import { shareDocument } from "@/lib/shareDocument";
 import { confirmAction, notify } from "@/lib/confirm";
 import type { DocumentKind } from "@/lib/documentHtml";
-import { Button, Card, Field, SectionTitle, styles } from "@/components/ui";
+import { Button, Card, Field, styles } from "@/components/ui";
+import { ChargesEditor } from "@/components/ChargesEditor";
 import { colors, spacing } from "@/constants/theme";
-import type { LineItemKind } from "@/types/models";
 
 export default function JobScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const job = useBookStore((s) => s.jobs.find((j) => j.id === id));
   const customer = useBookStore((s) => s.customers.find((c) => c.id === job?.customerId));
   const settings = useBookStore((s) => s.settings);
-  const { updateJob, updateCustomer, addLineItem, removeLineItem, markInvoiced, markPaid, deleteJob } =
-    useBookStore.getState();
-
-  const [newDesc, setNewDesc] = useState("");
-  const [newPrice, setNewPrice] = useState("");
-  const [newKind, setNewKind] = useState<LineItemKind>("parts");
+  const { updateJob, updateCustomer, markInvoiced, markPaid, deleteJob } = useBookStore.getState();
 
   if (!job) return <Text style={[styles.muted, { padding: spacing.md }]}>Job not found.</Text>;
-
-  const addLine = () => {
-    const pence = poundsToPence(newPrice);
-    if (!newDesc.trim() || pence === null) return;
-    addLineItem(job.id, { kind: newKind, description: newDesc.trim(), quantity: 1, unitPricePence: pence });
-    setNewDesc("");
-    setNewPrice("");
-  };
 
   const latest = () => useBookStore.getState().jobs.find((j) => j.id === job.id)!;
 
@@ -82,39 +67,7 @@ export default function JobScreen() {
         )}
       </Card>
 
-      <SectionTitle>Charges</SectionTitle>
-      <Card>
-        {job.lineItems.map((item) => (
-          <View key={item.id} style={[styles.row, { marginBottom: spacing.sm }]}>
-            <Text style={{ flex: 1, color: colors.text }}>
-              {item.description}{item.kind === "labour" && item.quantity !== 1 ? ` (${item.quantity} hrs)` : ""}
-            </Text>
-            <Text style={{ color: colors.text, marginRight: spacing.md }}>{formatPence(lineTotalPence(item))}</Text>
-            <Pressable onPress={() => removeLineItem(job.id, item.id)} hitSlop={10}>
-              <Text style={{ color: colors.danger }}>✕</Text>
-            </Pressable>
-          </View>
-        ))}
-        <View style={[styles.row, { borderTopWidth: 1, borderColor: colors.border, paddingTop: spacing.sm }]}>
-          <Text style={styles.title}>Total</Text>
-          <Text style={styles.title}>{formatPence(jobTotalPence(job.lineItems))}</Text>
-        </View>
-      </Card>
-
-      <Card>
-        <View style={{ flexDirection: "row", gap: spacing.sm, marginBottom: spacing.md }}>
-          {(["parts", "labour", "other"] as LineItemKind[]).map((k) => (
-            <Pressable key={k} onPress={() => setNewKind(k)}
-              style={{ paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999,
-                backgroundColor: newKind === k ? colors.brand : colors.border }}>
-              <Text style={{ color: newKind === k ? colors.textOnDark : colors.text }}>{k}</Text>
-            </Pressable>
-          ))}
-        </View>
-        <Field label="Item" value={newDesc} onChangeText={setNewDesc} placeholder="e.g. 15mm isolation valve" />
-        <Field label="Price (£)" value={newPrice} onChangeText={setNewPrice} keyboardType="decimal-pad" placeholder="0.00" />
-        <Button label="Add charge" variant="secondary" onPress={addLine} />
-      </Card>
+      <ChargesEditor job={job} />
 
       {job.status === "quote" && (
         <>

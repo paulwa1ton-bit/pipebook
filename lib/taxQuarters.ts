@@ -1,5 +1,6 @@
 import type { Expense, ExpenseCategory, Job } from "../types/models";
 import { jobTotalPence } from "./money.ts";
+import { markupEarnedPence } from "./pricing.ts";
 
 // MTD for Income Tax uses standard quarters aligned to the 6 April tax year:
 //   Q1 6 Apr - 5 Jul, Q2 6 Jul - 5 Oct, Q3 6 Oct - 5 Jan, Q4 6 Jan - 5 Apr
@@ -43,6 +44,9 @@ export interface QuarterSummary {
   expensesByCategory: Record<ExpenseCategory, number>;
   profitPence: number;
   paidJobCount: number;
+  // Part of turnover that came from commission on parts (for the plumber's
+  // own insight; HMRC only needs the turnover total).
+  commissionPence: number;
 }
 
 export function summariseQuarter(quarter: TaxQuarter, jobs: Job[], expenses: Expense[]): QuarterSummary {
@@ -66,5 +70,6 @@ export function summariseQuarter(quarter: TaxQuarter, jobs: Job[], expenses: Exp
     expensesByCategory,
     profitPence: turnoverPence - expensesPence,
     paidJobCount: paidJobs.length,
+    commissionPence: paidJobs.reduce((sum, j) => sum + markupEarnedPence(j.lineItems), 0),
   };
 }

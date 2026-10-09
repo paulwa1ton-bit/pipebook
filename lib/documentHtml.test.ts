@@ -13,7 +13,8 @@ const job: Job = {
   id: "abcdef12-3456", customerId: "c", title: "Replace <tap>", status: "invoiced", date: "2026-10-01",
   invoiceNumber: "INV-0001", invoicedOn: "2026-10-02", createdAt: "", updatedAt: "",
   lineItems: [
-    { id: "1", kind: "labour", description: "Labour", quantity: 1.5, unitPricePence: 5000 },
+    { id: "1", kind: "labour", description: "Labour", quantity: 1.5, unitPricePence: 5000, hourly: true },
+    { id: "3", kind: "parts", description: "Combi boiler", quantity: 1, unitPricePence: 115000, costPence: 100000, markupPercent: 15 },
     { id: "2", kind: "parts", description: "Parts & materials", quantity: 1, unitPricePence: 8500 },
   ],
 };
@@ -22,7 +23,9 @@ test("invoice shows totals, due date, payment box and escapes text", () => {
   const html = buildDocumentHtml("invoice", job, customer, settings);
   assert.match(html, /INVOICE/);
   assert.match(html, /INV-0001/);
-  assert.match(html, /£160\.00/);
+  assert.match(html, /£1,310\.00/);
+  assert.match(html, /£50\.00\/hr/);
+  assert.doesNotMatch(html, /1,000|15%|commission/i);
   assert.match(html, /1\.5 hrs/);
   assert.match(html, /Due: 16\/10\/2026/);
   assert.match(html, /How to pay/);

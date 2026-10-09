@@ -57,6 +57,9 @@ export default function MoneyScreen() {
 
       <Card>
         <Row label={`Paid in (${summary.paidJobCount} jobs)`} value={formatPence(summary.turnoverPence)} />
+        {summary.commissionPence > 0 && (
+          <Row label="   incl. commission on parts" value={formatPence(summary.commissionPence)} muted />
+        )}
         <Row label="Expenses" value={formatPence(-summary.expensesPence)} />
         {(Object.keys(CATEGORY_LABELS) as ExpenseCategory[])
           .filter((c) => summary.expensesByCategory[c] > 0)

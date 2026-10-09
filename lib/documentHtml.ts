@@ -42,8 +42,9 @@ export function buildDocumentHtml(
 
   const rows = job.lineItems
     .map((item) => {
-      const qty = item.kind === "labour" && item.quantity !== 1 ? `${item.quantity} hrs` : String(item.quantity);
-      return `<tr><td>${esc(item.description)}</td><td class="num">${esc(qty)}</td><td class="num">${formatPence(lineTotalPence(item))}</td></tr>`;
+      const qty = item.hourly ? `${item.quantity} hrs` : String(item.quantity);
+      const rate = item.hourly ? `${formatPence(item.unitPricePence)}/hr` : formatPence(item.unitPricePence);
+      return `<tr><td>${esc(item.description)}</td><td class="num">${esc(qty)}</td><td class="num">${rate}</td><td class="num">${formatPence(lineTotalPence(item))}</td></tr>`;
     })
     .join("");
 
@@ -106,9 +107,9 @@ export function buildDocumentHtml(
   <div class="work">${esc(job.title)}</div>
 
   <table>
-    <thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Amount</th></tr></thead>
+    <thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Rate</th><th class="num">Amount</th></tr></thead>
     <tbody>${rows}</tbody>
-    <tfoot><tr class="total"><td>Total</td><td></td><td class="num">${total}</td></tr></tfoot>
+    <tfoot><tr class="total"><td>Total</td><td></td><td></td><td class="num">${total}</td></tr></tfoot>
   </table>
 
   ${paid ? `<div class="paid">PAID ${job.paidOn ? formatUkDate(job.paidOn) : ""}</div>` : ""}

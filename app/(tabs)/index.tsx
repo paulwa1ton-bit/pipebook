@@ -3,6 +3,7 @@ import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 import { useBookStore } from "@/store/bookStore";
 import { parseQuickEntry } from "@/lib/quickEntry";
+import { activeMarkupPercent } from "@/lib/pricing";
 import { formatPence, jobTotalPence } from "@/lib/money";
 import { formatUkDate } from "@/lib/dates";
 import { Button, Card, SectionTitle, styles } from "@/components/ui";
@@ -35,7 +36,10 @@ export default function JobsScreen() {
 
   const addJob = (status: JobStatus) => {
     if (!note.trim()) return;
-    const job = addJobFromDraft(parseQuickEntry(note, settings), status);
+    const job = addJobFromDraft(
+      parseQuickEntry(note, { ...settings, markupPercent: activeMarkupPercent(settings) }),
+      status,
+    );
     setNote("");
     router.push(`/job/${job.id}`);
   };

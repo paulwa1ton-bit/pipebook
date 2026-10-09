@@ -73,6 +73,8 @@ npm test
 | `lib/quickEntry.ts` | Parses "Mrs Smith, replaced tap, 1 hour, £85 parts" |
 | `lib/taxQuarters.ts` | MTD quarters, deadlines, cash-basis summaries |
 | `lib/reminders.ts` | Builds 12-month repeat-work reminders |
+| `lib/pricing.ts` | Hourly labour, per-job rates and commission on parts |
+| `components/ChargesEditor.tsx` | Job charges: rate, hours, commission, add a charge |
 | `lib/documentHtml.ts` | Invoice / quote PDF layout |
 | `lib/shareDocument.ts` | Renders the PDF and opens the share sheet |
 | `lib/cloudSync.ts`, `lib/syncMerge.ts` | Cloud backup and merge rules |

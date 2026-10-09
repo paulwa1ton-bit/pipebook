@@ -9,6 +9,7 @@ import type { QuickEntryDraft } from "@/lib/quickEntry";
 import type { PendingLog, PendingOp } from "@/lib/syncMerge";
 import { formatInvoiceNumber } from "@/lib/invoice";
 import { todayIso } from "@/lib/dates";
+import { repriceHourly } from "@/lib/pricing";
 
 // Local-first: everything lives on the phone so it works in lofts and
 // basements with no signal. Every change is timestamped and logged in
@@ -43,6 +44,8 @@ interface BookState {
   deleteJob: (id: string) => void;
   addLineItem: (jobId: string, item: Omit<LineItem, "id">) => void;
   removeLineItem: (jobId: string, lineItemId: string) => void;
+  updateLineItem: (jobId: string, lineItemId: string, patch: Partial<LineItem>) => void;
+  setJobHourlyRate: (jobId: string, ratePence: number) => void;
   markInvoiced: (jobId: string) => void;
   markPaid: (jobId: string) => void;
 
@@ -130,6 +133,8 @@ export const useBookStore = create<BookState>()(
             status,
             date: todayIso(),
             lineItems: draft.lineItems.map((li) => ({ ...li, id: uuidv4() })),
+            // Pin the rate used, so changing the default later doesn't alter this job.
+            hourlyRatePence: get().settings.hourlyRatePence,
             reminderKind: draft.reminderKind,
             createdAt: now(),
             updatedAt: now(),
@@ -154,6 +159,17 @@ export const useBookStore = create<BookState>()(
         removeLineItem: (jobId, lineItemId) => {
           const job = get().jobs.find((j) => j.id === jobId);
           if (job) patchJob(jobId, { lineItems: job.lineItems.filter((li) => li.id !== lineItemId) });
+        },
+
+        updateLineItem: (jobId, lineItemId, patch) => {
+          const job = get().jobs.find((j) => j.id === jobId);
+          if (!job) return;
+          patchJob(jobId, { lineItems: job.lineItems.map((li) => (li.id === lineItemId ? { ...li, ...patch } : li)) });
+        },
+
+        setJobHourlyRate: (jobId, ratePence) => {
+          const job = get().jobs.find((j) => j.id === jobId);
+          if (job) patchJob(jobId, { hourlyRatePence: ratePence, lineItems: repriceHourly(job.lineItems, ratePence) });
         },
 
         markInvoiced: (jobId) => {
@@ -242,7 +258,7 @@ export const useBookStore = create<BookState>()(
     {
       name: "pipebook-book",
       storage: createJSONStorage(() => AsyncStorage),
-      version: 1,
+      version: 2,
       partialize: ({ syncStatus, syncError, ...rest }) => rest,
       // v0 (first MVP build) had no updatedAt or sync bookkeeping.
       migrate: (persisted, version) => {
@@ -254,6 +270,14 @@ export const useBookStore = create<BookState>()(
           state.expenses = (state.expenses ?? []).map((e: Expense) => ({ ...e, updatedAt: `${e.date}T00:00:00.000Z` }));
           state.settings = { ...DEFAULT_SETTINGS, ...state.settings, updatedAt: new Date(0).toISOString() };
           state.pending = EMPTY_PENDING;
+        }
+        if (version < 2) {
+          // v1 had no `hourly` flag: plain "Labour" lines were always hours x rate.
+          state.jobs = (state.jobs ?? []).map((j: Job) => ({
+            ...j,
+            lineItems: j.lineItems.map((li) =>
+              li.kind === "labour" && li.description === "Labour" ? { ...li, hourly: true } : li),
+          }));
         }
         return state as BookState;
       },

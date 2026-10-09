@@ -8,7 +8,15 @@ export interface LineItem {
   kind: LineItemKind;
   description: string;
   quantity: number;
+  // What the customer is charged per unit. Always the source of truth for totals.
   unitPricePence: number;
+  // Labour charged by the hour: quantity is hours and unitPricePence the hourly
+  // rate, so changing the job's rate re-prices these lines.
+  hourly?: boolean;
+  // Parts with commission: what the plumber paid per unit, and the % added on
+  // top. Never shown to the customer.
+  costPence?: number;
+  markupPercent?: number;
 }
 
 export type JobStatus = "quote" | "booked" | "done" | "invoiced" | "paid";
@@ -32,6 +40,8 @@ export interface Job {
   status: JobStatus;
   date: string;
   lineItems: LineItem[];
+  // Rate for this job's hourly labour; falls back to the settings rate.
+  hourlyRatePence?: number;
   notes?: string;
   invoiceNumber?: string;
   invoicedOn?: string;
@@ -66,6 +76,9 @@ export interface BusinessSettings {
   tradingName: string;
   hourlyRatePence: number;
   calloutPence: number;
+  // Commission on parts the plumber supplies (sourcing, handling, warranty).
+  markupEnabled?: boolean;
+  markupPercent?: number;
   paymentTermsDays: number;
   nextInvoiceNumber: number;
   bankDetails?: string;

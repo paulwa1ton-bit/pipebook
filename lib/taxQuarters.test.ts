@@ -39,4 +39,5 @@ test("summary counts income when paid (cash basis) and buckets expenses", () => 
   assert.equal(s.expensesPence, 5000);
   assert.equal(s.expensesByCategory.costOfGoods, 3000);
   assert.equal(s.profitPence, 5000);
+  assert.equal(s.commissionPence, 0);
 });

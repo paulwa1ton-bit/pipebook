@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
-import { Image, ScrollView, Text, View } from "react-native";
+import { Image, ScrollView, Switch, Text, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { useBookStore } from "@/store/bookStore";
 import { formatPence, poundsToPence } from "@/lib/money";
+import { DEFAULT_MARKUP_PERCENT, applyMarkup } from "@/lib/pricing";
 import { notify } from "@/lib/confirm";
 import { AccountCard } from "@/components/AccountCard";
 import { Button, Card, Field, SectionTitle, styles } from "@/components/ui";
-import { spacing } from "@/constants/theme";
+import { colors, spacing } from "@/constants/theme";
 
 // Logos are stored inline (as a small JPEG data URI) so they print on PDFs
 // offline and back up with the rest of the settings.
@@ -28,6 +29,15 @@ export default function SettingsScreen() {
   // Rates can change underneath us when a backup restores from another phone.
   useEffect(() => setHourly((settings.hourlyRatePence / 100).toFixed(2)), [settings.hourlyRatePence]);
   useEffect(() => setCallout((settings.calloutPence / 100).toFixed(2)), [settings.calloutPence]);
+
+  const markupPercent = settings.markupPercent ?? DEFAULT_MARKUP_PERCENT;
+  const [markup, setMarkup] = useState(String(markupPercent));
+  useEffect(() => setMarkup(String(markupPercent)), [markupPercent]);
+  const saveMarkup = () => {
+    const value = parseFloat(markup);
+    if (value >= 0 && value <= 500) updateSettings({ markupPercent: Math.round(value * 10) / 10 });
+    else setMarkup(String(markupPercent));
+  };
 
   const savePence = (value: string, key: "hourlyRatePence" | "calloutPence") => {
     const pence = poundsToPence(value);
@@ -78,12 +88,36 @@ export default function SettingsScreen() {
 
       <SectionTitle>Rates</SectionTitle>
       <Card>
-        <Field label="Hourly rate (£)" value={hourly} keyboardType="decimal-pad"
+        <Field label="Default hourly rate (£)" value={hourly} keyboardType="decimal-pad"
           onChangeText={setHourly} onBlur={() => savePence(hourly, "hourlyRatePence")} />
         <Field label="Call-out charge (£)" value={callout} keyboardType="decimal-pad"
           onChangeText={setCallout} onBlur={() => savePence(callout, "calloutPence")} />
         <Field label="Payment terms (days)" value={String(settings.paymentTermsDays)} keyboardType="number-pad"
           onChangeText={(v) => updateSettings({ paymentTermsDays: parseInt(v, 10) || 0 })} />
+        <Text style={styles.muted}>You can also change the hourly rate on any individual job.</Text>
+      </Card>
+
+      <SectionTitle>Commission on parts</SectionTitle>
+      <Card>
+        <View style={[styles.row, { marginBottom: spacing.sm }]}>
+          <Text style={[styles.title, { flex: 1 }]}>Add commission to parts I supply</Text>
+          <Switch value={settings.markupEnabled ?? false} onValueChange={(markupEnabled) => updateSettings({ markupEnabled })}
+            trackColor={{ true: colors.brandLight, false: colors.border }} />
+        </View>
+        <Text style={[styles.muted, { marginBottom: spacing.md }]}>
+          For sourcing, collecting and guaranteeing parts. Enter what you paid and the commission is added on top.
+          Customers only see the final price.
+        </Text>
+        {settings.markupEnabled && (
+          <>
+            <Field label="Commission (%)" value={markup} onChangeText={setMarkup} onBlur={saveMarkup}
+              keyboardType="decimal-pad" />
+            <Text style={styles.muted}>
+              e.g. a £1,000.00 boiler is charged at {formatPence(applyMarkup(100000, markupPercent))}.
+              You can switch it off for any single part on a job.
+            </Text>
+          </>
+        )}
       </Card>
       <Text style={[styles.muted, { marginTop: spacing.sm }]}>
         Quick entries use {formatPence(settings.hourlyRatePence)}/hr and a {formatPence(settings.calloutPence)} call-out.
