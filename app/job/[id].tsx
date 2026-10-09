@@ -3,7 +3,7 @@ import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useBookStore } from "@/store/bookStore";
 import { buildInvoiceText } from "@/lib/invoice";
 import { REMINDER_LABELS } from "@/lib/reminders";
-import { shareDocument } from "@/lib/shareDocument";
+import { sendDocument, SendMethod } from "@/lib/shareDocument";
 import { confirmAction, notify } from "@/lib/confirm";
 import type { DocumentKind } from "@/lib/documentHtml";
 import { Button, Card, Field, styles } from "@/components/ui";
@@ -21,13 +21,15 @@ export default function JobScreen() {
 
   const latest = () => useBookStore.getState().jobs.find((j) => j.id === job.id)!;
 
-  const sendPdf = async (kind: DocumentKind) => {
+  const sendPdf = async (kind: DocumentKind, method: SendMethod) => {
     if (kind === "invoice") markInvoiced(job.id);
     try {
-      await shareDocument(kind, latest(), customer, settings);
+      // Read the customer fresh too, in case the email was typed just now.
+      const currentCustomer = useBookStore.getState().customers.find((c) => c.id === job.customerId);
+      await sendDocument(kind, latest(), currentCustomer, settings, method);
     } catch (err) {
-      console.warn("[job] PDF share failed:", err);
-      notify("Couldn't create the PDF", "Try again, or send it as a text message instead.");
+      console.warn("[job] PDF send failed:", err);
+      notify("Couldn't send the PDF", "Try again, or use \"Share PDF\" to send it another way.");
     }
   };
 
@@ -57,6 +59,9 @@ export default function JobScreen() {
         <Field label="Customer" value={customer?.name ?? ""} onChangeText={(name) => customer && updateCustomer(customer.id, { name })} />
         <Field label="Phone" value={customer?.phone ?? ""} keyboardType="phone-pad"
           onChangeText={(phone) => customer && updateCustomer(customer.id, { phone })} />
+        <Field label="Email" value={customer?.email ?? ""} keyboardType="email-address" autoCapitalize="none"
+          autoComplete="email" placeholder="For emailing invoices and quotes"
+          onChangeText={(email) => customer && updateCustomer(customer.id, { email })} />
         <Field label="Address" value={customer?.address ?? ""}
           onChangeText={(address) => customer && updateCustomer(customer.id, { address })} />
         <Field label={job.status === "quote" ? "Proposed work" : "Work done"} value={job.title} onChangeText={(title) => updateJob(job.id, { title })} />
@@ -71,7 +76,8 @@ export default function JobScreen() {
 
       {job.status === "quote" && (
         <>
-          <Button label="Send quote (PDF)" onPress={() => sendPdf("quote")} />
+          <Button label="Email quote (PDF)" onPress={() => sendPdf("quote", "email")} />
+          <Button label="Share quote PDF (WhatsApp, text...)" variant="secondary" onPress={() => sendPdf("quote", "share")} />
           <Button label="Quote accepted - book it in" variant="secondary"
             onPress={() => updateJob(job.id, { status: "booked" })} />
         </>
@@ -82,15 +88,17 @@ export default function JobScreen() {
       )}
       {(job.status === "done" || job.status === "invoiced") && (
         <>
-          <Button label={job.invoiceNumber ? "Resend invoice (PDF)" : "Send invoice (PDF)"} onPress={() => sendPdf("invoice")} />
-          <Button label="Send as text message instead" variant="secondary" onPress={sendInvoiceText} />
+          <Button label={job.invoiceNumber ? "Email invoice again (PDF)" : "Email invoice (PDF)"} onPress={() => sendPdf("invoice", "email")} />
+          <Button label="Share invoice PDF (WhatsApp, text...)" variant="secondary" onPress={() => sendPdf("invoice", "share")} />
+          <Button label="Send as a text message (no PDF)" variant="secondary" onPress={sendInvoiceText} />
         </>
       )}
       {job.status === "invoiced" && <Button label="Mark paid" onPress={() => markPaid(job.id)} />}
       {job.status === "paid" && (
         <>
           <Text style={[styles.title, { color: colors.success, textAlign: "center", marginBottom: spacing.md }]}>✓ Paid</Text>
-          <Button label="Send paid receipt (PDF)" variant="secondary" onPress={() => sendPdf("invoice")} />
+          <Button label="Email paid receipt (PDF)" variant="secondary" onPress={() => sendPdf("invoice", "email")} />
+          <Button label="Share paid receipt PDF" variant="secondary" onPress={() => sendPdf("invoice", "share")} />
         </>
       )}
       <Button label="Delete job" variant="danger" onPress={confirmDelete} />
