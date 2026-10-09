@@ -17,7 +17,7 @@
       "package": "com.pipebook.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#2A68AE"
+        "backgroundColor": "#F5EDDD"
       }
     },
     "web": {
