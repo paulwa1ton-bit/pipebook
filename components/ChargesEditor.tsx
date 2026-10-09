@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Ref, useEffect, useImperativeHandle, useMemo, useState } from "react";
 import { Pressable, Switch, Text, TextInput, View } from "react-native";
 import { useBookStore } from "@/store/bookStore";
 import { usePriceListStore } from "@/store/priceListStore";
@@ -46,7 +46,16 @@ function StepButton({ label, onPress }: { label: string; onPress: () => void }) 
   );
 }
 
-export function ChargesEditor({ job }: { job: Job }) {
+/** Lets the job screen's Save button finish anything left half-done here. */
+export interface ChargesEditorHandle {
+  /** Applies an hourly rate that was typed but not yet confirmed. */
+  commitRate: () => void;
+  /** A typed-but-not-added charge: its description if it can be added, "incomplete" if not, else null. */
+  pendingCharge: () => string | "incomplete" | null;
+  addPendingCharge: () => boolean;
+}
+
+export function ChargesEditor({ job, ref }: { job: Job; ref?: Ref<ChargesEditorHandle> }) {
   const settings = useBookStore((s) => s.settings);
   const { addLineItem, removeLineItem, updateLineItem, setJobHourlyRate } = useBookStore.getState();
 
@@ -95,12 +104,15 @@ export function ChargesEditor({ job }: { job: Job }) {
         ? `${formatPence(parsedAmount)} + ${newMarkup}% = customer pays ${formatPence(applyMarkup(parsedAmount, newMarkup))}`
         : null;
 
-  const addCharge = () => {
+  const chargeReady = kind === "hours" ? parsedHours > 0 : !!desc.trim() && parsedAmount !== null;
+  const chargeStarted = !!(desc.trim() || amount.trim() || hours.trim());
+
+  const addCharge = (): boolean => {
+    if (!chargeReady) return false;
     if (kind === "hours") {
-      if (!(parsedHours > 0)) return;
       addLineItem(job.id, { ...hourlyLabourLine(parsedHours, rate), description: desc.trim() || "Labour" });
     } else {
-      if (!desc.trim() || parsedAmount === null) return;
+      if (parsedAmount === null) return false;
       addLineItem(job.id, kind === "parts"
         ? partsLine(desc.trim(), parsedAmount, addCommission ? newMarkup : undefined)
         : { kind: "other", description: desc.trim(), quantity: 1, unitPricePence: parsedAmount });
@@ -109,7 +121,18 @@ export function ChargesEditor({ job }: { job: Job }) {
     setAmount("");
     setHours("");
     setPickedName(null);
+    return true;
   };
+
+  useImperativeHandle(ref, () => ({
+    commitRate: saveRate,
+    pendingCharge: () => {
+      if (!chargeStarted) return null;
+      if (!chargeReady) return "incomplete";
+      return kind === "hours" ? `${roundHours(parsedHours)} hrs labour` : desc.trim();
+    },
+    addPendingCharge: addCharge,
+  }));
 
   const toggleLineCommission = (item: LineItem) =>
     updateLineItem(job.id, item.id, withMarkup(item, item.markupPercent ? undefined : settingsMarkup ?? newMarkup));
@@ -234,7 +257,7 @@ export function ChargesEditor({ job }: { job: Job }) {
           </>
         )}
         {preview && <Text style={[styles.muted, { marginBottom: spacing.md, color: colors.brand }]}>{preview}</Text>}
-        <Button label="Add charge" variant="secondary" onPress={addCharge} />
+        <Button label="Add charge" variant="secondary" onPress={() => addCharge()} />
       </Card>
     </>
   );
