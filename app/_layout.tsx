@@ -22,6 +22,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="job/[id]" options={{ title: "Job" }} />
           <Stack.Screen name="parts" options={{ title: "Parts & price lists" }} />
+          <Stack.Screen name="customer/[id]" options={{ title: "Customer" }} />
         </Stack>
         <LandingOverlay />
       </SafeAreaProvider>

@@ -39,7 +39,8 @@ interface BookState {
   syncStatus: SyncStatus;
   syncError: string | null;
 
-  addJobFromDraft: (draft: QuickEntryDraft, status?: JobStatus) => Job;
+  /** Creates a job for the chosen customer, or finds/creates one by the name in the note. */
+  addJobFromDraft: (draft: QuickEntryDraft, status?: JobStatus, customerId?: string) => Job;
   updateJob: (id: string, patch: Partial<Job>) => void;
   deleteJob: (id: string) => void;
   addLineItem: (jobId: string, item: Omit<LineItem, "id">) => void;
@@ -49,7 +50,10 @@ interface BookState {
   markInvoiced: (jobId: string) => void;
   markPaid: (jobId: string) => void;
 
+  addCustomer: (input: Omit<Customer, "id" | "createdAt" | "updatedAt">) => Customer;
   updateCustomer: (id: string, patch: Partial<Customer>) => void;
+  /** Only allowed for customers with no jobs, so no invoice loses its customer. */
+  deleteCustomer: (id: string) => boolean;
 
   addExpense: (input: Omit<Expense, "id" | "updatedAt">) => void;
   deleteExpense: (id: string) => void;
@@ -115,17 +119,12 @@ export const useBookStore = create<BookState>()(
         syncStatus: "idle",
         syncError: null,
 
-        addJobFromDraft: (draft, status = "done") => {
+        addJobFromDraft: (draft, status = "done", customerId) => {
           const name = draft.customerName.trim() || "New customer";
-          let customer = get().customers.find((c) => c.name.toLowerCase() === name.toLowerCase());
-          if (!customer) {
-            const created: Customer = { id: uuidv4(), name, createdAt: now(), updatedAt: now() };
-            customer = created;
-            set((s) => ({
-              customers: [...s.customers, created],
-              pending: logChange(s.pending, "customers", created.id, "upsert"),
-            }));
-          }
+          const customer =
+            (customerId && get().customers.find((c) => c.id === customerId)) ||
+            get().customers.find((c) => c.name.toLowerCase() === name.toLowerCase()) ||
+            get().addCustomer({ name });
           const job: Job = {
             id: uuidv4(),
             customerId: customer.id,
@@ -185,6 +184,24 @@ export const useBookStore = create<BookState>()(
         },
 
         markPaid: (jobId) => patchJob(jobId, { status: "paid", paidOn: todayIso() }),
+
+        addCustomer: (input) => {
+          const customer: Customer = { ...input, name: input.name.trim(), id: uuidv4(), createdAt: now(), updatedAt: now() };
+          set((s) => ({
+            customers: [...s.customers, customer],
+            pending: logChange(s.pending, "customers", customer.id, "upsert"),
+          }));
+          return customer;
+        },
+
+        deleteCustomer: (id) => {
+          if (get().jobs.some((j) => j.customerId === id)) return false;
+          set((s) => ({
+            customers: s.customers.filter((c) => c.id !== id),
+            pending: logChange(s.pending, "customers", id, "delete"),
+          }));
+          return true;
+        },
 
         updateCustomer: (id, patch) =>
           set((s) => ({

@@ -13,6 +13,7 @@ import { formatUkDate, todayIso } from "@/lib/dates";
 import { formatPence } from "@/lib/money";
 import { Button, Card, Field, SectionTitle, styles } from "@/components/ui";
 import { ChargesEditor, ChargesEditorHandle } from "@/components/ChargesEditor";
+import { CustomerPicker } from "@/components/CustomerPicker";
 import { syncNow } from "@/lib/cloudSync";
 import { colors, spacing } from "@/constants/theme";
 
@@ -24,6 +25,7 @@ export default function JobScreen() {
   const { updateJob, updateCustomer, markInvoiced, markPaid, deleteJob } = useBookStore.getState();
   const charges = useRef<ChargesEditorHandle>(null);
   const [saved, setSaved] = useState(false);
+  const [pickingCustomer, setPickingCustomer] = useState(false);
 
   if (!job) return <Text style={[styles.muted, { padding: spacing.md }]}>Job not found.</Text>;
 
@@ -114,6 +116,16 @@ export default function JobScreen() {
         />
 
         <Card>
+          <View style={[styles.row, { marginBottom: spacing.sm }]}>
+            <Pressable onPress={() => setPickingCustomer(true)} hitSlop={8}>
+              <Text style={{ color: colors.brand, fontWeight: "600" }}>Change customer</Text>
+            </Pressable>
+            {customer && (
+              <Pressable onPress={() => router.push(`/customer/${customer.id}`)} hitSlop={8}>
+                <Text style={{ color: colors.brand, fontWeight: "600" }}>Customer page ›</Text>
+              </Pressable>
+            )}
+          </View>
           <Field label="Customer" value={customer?.name ?? ""} onChangeText={(name) => customer && updateCustomer(customer.id, { name })} />
           <Field label="Phone" value={customer?.phone ?? ""} keyboardType="phone-pad"
             onChangeText={(phone) => customer && updateCustomer(customer.id, { phone })} />
@@ -129,6 +141,9 @@ export default function JobScreen() {
             </Text>
           )}
         </Card>
+
+        <CustomerPicker visible={pickingCustomer} onClose={() => setPickingCustomer(false)}
+          onPick={(c) => updateJob(job.id, { customerId: c.id })} />
 
         <QuoteStatusCard job={job} />
 

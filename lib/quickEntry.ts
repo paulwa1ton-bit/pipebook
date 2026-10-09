@@ -43,9 +43,12 @@ export function detectReminderKind(text: string): ReminderKind | undefined {
 export function parseQuickEntry(
   text: string,
   rates: { hourlyRatePence: number; calloutPence: number; markupPercent?: number },
+  // When the customer has already been picked from the list, the note
+  // doesn't start with their name.
+  { customerChosen = false }: { customerChosen?: boolean } = {},
 ): QuickEntryDraft {
   const chunks = text.split(/[,;\n]/).map((c) => c.trim()).filter(Boolean);
-  const customerName = chunks.shift() ?? "";
+  const customerName = customerChosen ? "" : chunks.shift() ?? "";
   const titleParts: string[] = [];
   const lineItems: Omit<LineItem, "id">[] = [];
 

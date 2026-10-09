@@ -17,6 +17,7 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: "Jobs", tabBarIcon: () => <TabIcon symbol="🔧" /> }} />
+      <Tabs.Screen name="customers" options={{ title: "Customers", tabBarIcon: () => <TabIcon symbol="👥" /> }} />
       <Tabs.Screen name="reminders" options={{ title: "Reminders", tabBarIcon: () => <TabIcon symbol="🔔" /> }} />
       <Tabs.Screen name="money" options={{ title: "Money & Tax", tabBarIcon: () => <TabIcon symbol="💷" /> }} />
       <Tabs.Screen name="settings" options={{ title: "Settings", tabBarIcon: () => <TabIcon symbol="⚙️" /> }} />

@@ -47,3 +47,10 @@ test("commission is added to supplied parts but not labour", () => {
     { kind: "parts", description: "Parts & materials", quantity: 1, unitPricePence: 6900, costPence: 6000, markupPercent: 15 },
   ]);
 });
+
+test("with the customer already chosen, the first chunk is the work, not a name", () => {
+  const draft = parseQuickEntry("replaced kitchen tap, 1 hour", rates, { customerChosen: true });
+  assert.equal(draft.customerName, "");
+  assert.equal(draft.title, "Replaced kitchen tap");
+  assert.equal(draft.lineItems.length, 1);
+});

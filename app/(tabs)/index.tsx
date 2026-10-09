@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useBookStore } from "@/store/bookStore";
 import { parseQuickEntry } from "@/lib/quickEntry";
 import { activeMarkupPercent } from "@/lib/pricing";
@@ -9,6 +9,8 @@ import { formatUkDate, todayIso } from "@/lib/dates";
 import { quoteReference } from "@/lib/documentHtml";
 import { quoteState } from "@/lib/quotes";
 import { Button, Card, SectionTitle, styles } from "@/components/ui";
+import { CustomerPicker } from "@/components/CustomerPicker";
+import { addressFirstLine } from "@/lib/customers";
 import { colors, radius, spacing } from "@/constants/theme";
 import type { BusinessSettings, Job, JobStatus } from "@/types/models";
 
@@ -37,6 +39,16 @@ export default function JobsScreen() {
   const addJobFromDraft = useBookStore((s) => s.addJobFromDraft);
   const [note, setNote] = useState("");
   const [kind, setKind] = useState<NewKind>("invoice");
+  const [customerId, setCustomerId] = useState<string | null>(null);
+  const [picking, setPicking] = useState(false);
+  const chosen = customers.find((c) => c.id === customerId);
+
+  // Arriving from a customer's page ("New quote for Mrs Smith").
+  const params = useLocalSearchParams<{ customerId?: string; kind?: NewKind }>();
+  useEffect(() => {
+    if (params.customerId) setCustomerId(params.customerId);
+    if (params.kind === "invoice" || params.kind === "quote") setKind(params.kind);
+  }, [params.customerId, params.kind]);
 
   const customerName = (id: string) => customers.find((c) => c.id === id)?.name ?? "";
   const grouped = useMemo(
@@ -48,10 +60,13 @@ export default function JobsScreen() {
   const create = () => {
     if (!note.trim()) return;
     const job = addJobFromDraft(
-      parseQuickEntry(note, { ...settings, markupPercent: activeMarkupPercent(settings) }),
+      parseQuickEntry(note, { ...settings, markupPercent: activeMarkupPercent(settings) }, { customerChosen: !!chosen }),
       kind === "quote" ? "quote" : "done",
+      chosen?.id,
     );
     setNote("");
+    setCustomerId(null);
+    router.setParams({ customerId: undefined, kind: undefined });
     router.push(`/job/${job.id}`);
   };
 
@@ -69,20 +84,37 @@ export default function JobsScreen() {
             </Pressable>
           ))}
         </View>
+        <Pressable onPress={() => setPicking(true)}
+          style={[styles.row, { borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, padding: spacing.sm, marginBottom: spacing.sm }]}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.label}>Customer</Text>
+            <Text style={{ color: chosen ? colors.text : colors.textMuted, fontWeight: chosen ? "700" : "400" }}>
+              {chosen ? chosen.name : "Choose existing or add new (or just say their name below)"}
+            </Text>
+            {chosen?.address ? <Text style={[styles.muted, { fontSize: 12 }]}>{addressFirstLine(chosen.address)}</Text> : null}
+          </View>
+          {chosen ? (
+            <Pressable onPress={() => setCustomerId(null)} hitSlop={10}><Text style={{ color: colors.danger }}>✕</Text></Pressable>
+          ) : (
+            <Text style={{ color: colors.textMuted, fontSize: 20 }}>›</Text>
+          )}
+        </Pressable>
         <Text style={styles.muted}>
           {kind === "invoice" ? "Job done? " : "Pricing up a job? "}
-          Type or tap the 🎤 on your keyboard and say it, e.g.{"\n"}{EXAMPLES[kind].hint}
+          Type or tap the 🎤 on your keyboard and say it, e.g.{"\n"}
+          {chosen ? EXAMPLES[kind].hint.replace(/^"[^,]+, /, '"') : EXAMPLES[kind].hint}
         </Text>
         <TextInput
           value={note}
           onChangeText={setNote}
           multiline
-          placeholder={kind === "invoice" ? "Customer, what you did, time, £ parts" : "Customer, the work, time, £ parts"}
+          placeholder={(chosen ? "" : "Customer, ") + (kind === "invoice" ? "what you did, time, £ parts" : "the work, time, £ parts")}
           placeholderTextColor={colors.textMuted}
           style={[styles.input, { minHeight: 80, textAlignVertical: "top", marginVertical: spacing.md }]}
         />
-        <Button label={EXAMPLES[kind].button} onPress={create} disabled={!note.trim()} />
+        <Button label={EXAMPLES[kind].button + (chosen ? ` for ${chosen.name}` : "")} onPress={create} disabled={!note.trim()} />
       </Card>
+      <CustomerPicker visible={picking} onClose={() => setPicking(false)} onPick={(c) => setCustomerId(c.id)} />
 
       {grouped.length === 0 && (
         <Text style={[styles.muted, { textAlign: "center", marginTop: spacing.lg }]}>
