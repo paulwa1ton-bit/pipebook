@@ -55,11 +55,11 @@ export function buildDocumentHtml(
 <style>
   * { box-sizing: border-box; }
   body { font-family: -apple-system, Helvetica, Arial, sans-serif; color: #14212B; margin: 40px; font-size: 13px; }
-  .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #0E4C6E; padding-bottom: 16px; }
+  .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #1F5592; padding-bottom: 16px; }
   .logo { max-width: 180px; max-height: 80px; }
   .biz { font-size: 12px; color: #5B6B78; line-height: 1.5; margin-top: 6px; }
   .biz strong { color: #14212B; font-size: 16px; }
-  h1 { margin: 0; font-size: 28px; color: #0E4C6E; text-align: right; letter-spacing: 1px; }
+  h1 { margin: 0; font-size: 28px; color: #1F5592; text-align: right; letter-spacing: 1px; }
   .meta { text-align: right; font-size: 12px; line-height: 1.6; margin-top: 6px; }
   .to { margin: 24px 0; line-height: 1.5; }
   .label { font-size: 11px; text-transform: uppercase; color: #5B6B78; letter-spacing: .5px; }

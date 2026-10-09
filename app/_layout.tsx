@@ -4,6 +4,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { colors } from "@/constants/theme";
 import { useCloudBackup } from "@/hooks/useCloudBackup";
+import { LandingOverlay } from "@/components/LandingOverlay";
 
 export default function RootLayout() {
   useCloudBackup();
@@ -22,6 +23,7 @@ export default function RootLayout() {
           <Stack.Screen name="job/[id]" options={{ title: "Job" }} />
           <Stack.Screen name="parts" options={{ title: "Parts & price lists" }} />
         </Stack>
+        <LandingOverlay />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

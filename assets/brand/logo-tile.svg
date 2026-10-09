@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024"><defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3A7BC4"/>
+      <stop offset="1" stop-color="#1F5592"/>
+    </linearGradient>
+    <linearGradient id="skin" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFD9B0"/>
+      <stop offset="1" stop-color="#F6BC8A"/>
+    </linearGradient>
+  </defs><clipPath id="r"><rect x="40" y="40" width="944" height="944" rx="210"/></clipPath>
+<rect x="24" y="24" width="976" height="976" rx="226" fill="#ffffff"/>
+<g clip-path="url(#r)"><rect width="1024" height="1024" fill="url(#bg)"/><ellipse cx="380" cy="160" rx="520" ry="230" fill="#ffffff" opacity="0.07"/>  <g transform="translate(-30 10)">
+  <g stroke="#14263D" stroke-width="16" stroke-linejoin="round" stroke-linecap="round">
+    <!-- P -->
+    <path fill="#F4F8FC" fill-rule="evenodd" d="
+      M 262 300 H 410 A 158 158 0 0 1 410 616 H 352 V 742 A 34 34 0 0 1 318 776 H 262 A 34 34 0 0 1 228 742 V 334 A 34 34 0 0 1 262 300 Z
+      M 352 404 V 512 H 404 A 54 54 0 0 0 404 404 Z"/>
+
+    <!-- cuff -->
+    <rect x="566" y="500" width="96" height="290" rx="20" fill="#F28C28"/>
+    <!-- thumb -->
+    <path fill="url(#skin)" d="M 662 520 C 640 440 650 370 690 300 C 712 262 770 270 770 320 C 770 370 752 420 760 470 L 790 470 Z"/>
+    <!-- fist -->
+    <path fill="url(#skin)" d="M 662 470 H 826 A 39 39 0 0 1 826 548 A 39 39 0 0 1 826 626 A 39 39 0 0 1 826 704 A 36 36 0 0 1 816 776 H 662 Z"/>
+    <!-- finger creases -->
+    <path fill="none" d="M 786 548 H 826 M 786 626 H 826 M 786 704 H 826"/>
+  </g>
+  <!-- cuff button -->
+  <circle cx="614" cy="740" r="16" fill="#14263D"/>
+  <!-- sparkles -->
+  <g stroke="#F7C35A" stroke-width="18" stroke-linecap="round">
+    <path d="M 812 250 L 836 196"/>
+    <path d="M 858 300 L 912 270"/>
+    <path d="M 862 360 L 920 360"/>
+  </g>
+  <g stroke="#9FD0F5" stroke-width="16" stroke-linecap="round">
+    <path d="M 196 850 L 240 820"/>
+    <path d="M 290 878 L 296 830"/>
+  </g>
+  </g></g></svg>
