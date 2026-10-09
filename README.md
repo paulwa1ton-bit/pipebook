@@ -54,6 +54,39 @@ plus `"emulatorHost": "127.0.0.1"`. Don't commit that.
 - Logging out removes the data from the phone (it comes back on login), and
   warns first if anything hasn't backed up yet.
 
+## Releasing to testers (EAS)
+
+One-time setup (needs a free account at https://expo.dev):
+
+```bash
+npm install -g eas-cli
+eas login
+eas init                # links this project to your Expo account (adds extra.eas.projectId)
+eas update:configure    # adds the updates URL to app.json
+git add app.json && git commit -m "Link EAS project" && git push
+```
+
+Build an installable Android app for testers (send them the link / QR code it prints):
+
+```bash
+eas build --platform android --profile preview
+```
+
+iPhone (needs an Apple Developer account): `eas build --platform ios --profile production`,
+then `eas submit --platform ios` to upload to TestFlight.
+
+**Shipping fixes without a new build.** For changes to the app's screens and logic:
+
+```bash
+eas update --channel preview --message "What changed"
+```
+
+Testers' phones download it next time the app opens and show "Update ready - tap to
+restart". Changes to native parts (new native packages, app.json plugins/permissions,
+icons, the patches folder) need a new `eas build` instead; the runtime "fingerprint"
+makes sure an update is never sent to a build it isn't compatible with. Settings shows
+the version and update id at the bottom, so testers can say which version they have.
+
 ## Checks
 
 ```bash

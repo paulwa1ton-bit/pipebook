@@ -3,7 +3,9 @@ import { Image, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
+import Constants from "expo-constants";
 import { useBookStore } from "@/store/bookStore";
+import { versionLabel } from "@/components/UpdateBanner";
 import { usePriceListStore } from "@/store/priceListStore";
 import { formatPence, poundsToPence } from "@/lib/money";
 import { DEFAULT_MARKUP_PERCENT, applyMarkup } from "@/lib/pricing";
@@ -150,6 +152,9 @@ export default function SettingsScreen() {
       <Text style={[styles.muted, { marginTop: spacing.sm }]}>
         Quick entries use {formatPence(settings.hourlyRatePence)}/hr and a {formatPence(settings.calloutPence)} call-out.
         Next invoice number: {settings.nextInvoiceNumber}.
+      </Text>
+      <Text style={[styles.muted, { textAlign: "center", marginTop: spacing.lg, fontSize: 12 }]}>
+        Pipebook {versionLabel(Constants.expoConfig?.version)}
       </Text>
     </ScrollView>
   );
