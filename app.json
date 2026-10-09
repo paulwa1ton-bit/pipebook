@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "PipeBook",
+    "name": "Pipebook",
     "slug": "pipebook",
     "version": "0.1.0",
     "orientation": "portrait",
@@ -10,7 +10,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.pipebook.app",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "PipeBook uses your photo library so you can add your business logo to invoices and quotes.",
+        "NSPhotoLibraryUsageDescription": "Pipebook uses your photo library so you can add your business logo to invoices and quotes.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -30,7 +30,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "PipeBook uses your photo library so you can add your business logo to invoices and quotes."
+          "photosPermission": "Pipebook uses your photo library so you can add your business logo to invoices and quotes."
         }
       ],
       [

@@ -74,7 +74,7 @@ export default function HomeScreen() {
           <View style={{ flex: 1 }}>
             <Text style={{ color: colors.textOnDark, opacity: 0.85 }}>{greeting()}</Text>
             <Text style={{ color: colors.textOnDark, fontSize: 22, fontWeight: "800" }} numberOfLines={2}>
-              {settings.tradingName || "PipeBook"}
+              {settings.tradingName || "Pipebook"}
             </Text>
             {settings.gasSafeNumber ? (
               <Text style={{ color: colors.textOnDark, opacity: 0.85, fontSize: 12 }}>Gas Safe reg. {settings.gasSafeNumber}</Text>
@@ -92,7 +92,7 @@ export default function HomeScreen() {
         {!branded && (
           <Pressable onPress={() => router.push("/settings")}>
             <Card style={{ borderColor: colors.accent, borderWidth: 1.5 }}>
-              <Text style={styles.title}>Make PipeBook yours</Text>
+              <Text style={styles.title}>Make Pipebook yours</Text>
               <Text style={[styles.muted, { marginTop: spacing.xs }]}>
                 Add your business name and logo. They'll show here and on every quote and invoice. Tap to set up ›
               </Text>

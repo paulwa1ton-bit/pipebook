@@ -158,7 +158,7 @@ export default function PartsScreen() {
         <Text style={styles.title}>Your parts</Text>
         <Text style={[styles.muted, { marginTop: spacing.xs }]}>
           When you add a part to a job, start typing and pick from parts you've used before ({usedCount} so far), your
-          suppliers' price lists, or {STANDARD_PARTS.length} standard parts built into PipeBook. Your price fills in
+          suppliers' price lists, or {STANDARD_PARTS.length} standard parts built into Pipebook. Your price fills in
           automatically (with your commission if it's switched on); for standard parts you add the price yourself.
         </Text>
       </Card>

@@ -53,7 +53,7 @@ export function LandingOverlay() {
     <Animated.View
       style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, opacity, backgroundColor: landing.cream, zIndex: 10 }}
     >
-      <Pressable style={{ flex: 1 }} onPress={firstRun ? undefined : dismiss} accessibilityLabel="PipeBook. Tap to continue">
+      <Pressable style={{ flex: 1 }} onPress={firstRun ? undefined : dismiss} accessibilityLabel="Pipebook. Tap to continue">
         <View style={{ height: insets.top }} />
         <Image source={ART} style={{ width: artWidth, height: artHeight, alignSelf: "center" }} resizeMode="contain" />
         <View style={{ flex: 1, backgroundColor: landing.orange, marginTop: -2 }} />

@@ -1,4 +1,4 @@
-# PipeBook - Product Brief
+# Pipebook - Product Brief
 
 ## Who it's for
 Solo UK plumbers (and one-van heating engineers) who do their paperwork in the

@@ -1,6 +1,6 @@
 # Brand assets
 
-- `logo-original.png` - the PipeBook logo artwork as supplied (tile mock-up on cream).
+- `logo-original.png` - the Pipebook logo artwork as supplied (tile mock-up on cream).
 - `../icon.png` - iOS / default app icon (1024px, square, no transparency; the phone rounds the corners).
 - `../adaptive-icon.png` - Android adaptive icon foreground (design kept inside the safe circle), on `#F5EDDD`.
 - `../splash-icon.png` - rounded tile shown on the native splash screen.

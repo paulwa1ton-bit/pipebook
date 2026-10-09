@@ -1,4 +1,4 @@
-# PipeBook
+# Pipebook
 
 Voice-first jobs, invoices, service reminders and Making-Tax-Digital-ready
 records for solo UK plumbers. See [docs/PRODUCT_BRIEF.md](docs/PRODUCT_BRIEF.md)
@@ -30,7 +30,7 @@ Until this is done the app works offline-only and Settings says backup isn't set
 4. In Firestore's **Rules** tab, paste the contents of [`firestore.rules`](firestore.rules)
    and **Publish**. (Each plumber can only read and write their own data.)
 5. **Project settings (gear) > General > Your apps > Web (`</>`)**, register an app
-   called `PipeBook`, and copy the `firebaseConfig` values into `app.json` under
+   called `Pipebook`, and copy the `firebaseConfig` values into `app.json` under
    `expo.extra.firebase`, replacing each `REPLACE_ME`.
 6. Restart `npx expo start`. Settings now shows **Create account / Log in**.
 
