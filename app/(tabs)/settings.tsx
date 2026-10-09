@@ -7,6 +7,7 @@ import { useBookStore } from "@/store/bookStore";
 import { usePriceListStore } from "@/store/priceListStore";
 import { formatPence, poundsToPence } from "@/lib/money";
 import { DEFAULT_MARKUP_PERCENT, applyMarkup } from "@/lib/pricing";
+import { DEFAULT_QUOTE_VALID_DAYS } from "@/lib/quotes";
 import { notify } from "@/lib/confirm";
 import { AccountCard } from "@/components/AccountCard";
 import { Button, Card, Field, SectionTitle, styles } from "@/components/ui";
@@ -32,6 +33,15 @@ export default function SettingsScreen() {
   // Rates can change underneath us when a backup restores from another phone.
   useEffect(() => setHourly((settings.hourlyRatePence / 100).toFixed(2)), [settings.hourlyRatePence]);
   useEffect(() => setCallout((settings.calloutPence / 100).toFixed(2)), [settings.calloutPence]);
+
+  const validDays = settings.quoteValidDays ?? DEFAULT_QUOTE_VALID_DAYS;
+  const [quoteDays, setQuoteDays] = useState(String(validDays));
+  useEffect(() => setQuoteDays(String(validDays)), [validDays]);
+  const saveQuoteDays = () => {
+    const days = parseInt(quoteDays, 10);
+    if (days > 0 && days <= 365) updateSettings({ quoteValidDays: days });
+    else setQuoteDays(String(validDays));
+  };
 
   const markupPercent = settings.markupPercent ?? DEFAULT_MARKUP_PERCENT;
   const [markup, setMarkup] = useState(String(markupPercent));
@@ -97,6 +107,8 @@ export default function SettingsScreen() {
           onChangeText={setCallout} onBlur={() => savePence(callout, "calloutPence")} />
         <Field label="Payment terms (days)" value={String(settings.paymentTermsDays)} keyboardType="number-pad"
           onChangeText={(v) => updateSettings({ paymentTermsDays: parseInt(v, 10) || 0 })} />
+        <Field label="Quotes valid for (days)" value={quoteDays} keyboardType="number-pad"
+          onChangeText={setQuoteDays} onBlur={saveQuoteDays} />
         <Text style={styles.muted}>You can also change the hourly rate on any individual job.</Text>
       </Card>
 

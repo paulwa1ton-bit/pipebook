@@ -5,20 +5,30 @@ import { useBookStore } from "@/store/bookStore";
 import { parseQuickEntry } from "@/lib/quickEntry";
 import { activeMarkupPercent } from "@/lib/pricing";
 import { formatPence, jobTotalPence } from "@/lib/money";
-import { formatUkDate } from "@/lib/dates";
+import { formatUkDate, todayIso } from "@/lib/dates";
+import { quoteReference } from "@/lib/documentHtml";
+import { quoteState } from "@/lib/quotes";
 import { Button, Card, SectionTitle, styles } from "@/components/ui";
-import { colors, spacing } from "@/constants/theme";
-import type { Job, JobStatus } from "@/types/models";
+import { colors, radius, spacing } from "@/constants/theme";
+import type { BusinessSettings, Job, JobStatus } from "@/types/models";
+
+type NewKind = "invoice" | "quote";
 
 const STATUS_LABELS: Record<JobStatus, string> = {
-  quote: "Quote",
-  booked: "Booked",
+  quote: "Quotes awaiting a reply",
+  booked: "Booked in",
   done: "Done - not invoiced",
   invoiced: "Awaiting payment",
   paid: "Paid",
+  declined: "Declined quotes",
 };
 
-const STATUS_ORDER: JobStatus[] = ["done", "invoiced", "booked", "quote", "paid"];
+const STATUS_ORDER: JobStatus[] = ["done", "invoiced", "quote", "booked", "paid", "declined"];
+
+const EXAMPLES: Record<NewKind, { hint: string; button: string }> = {
+  invoice: { hint: '"Mrs Smith, replaced kitchen tap, 1 hour, £85 parts"', button: "Create invoice" },
+  quote: { hint: '"Mr Khan, new combi boiler, 8 hours, £1000 boiler"', button: "Create quote" },
+};
 
 export default function JobsScreen() {
   const jobs = useBookStore((s) => s.jobs);
@@ -26,6 +36,7 @@ export default function JobsScreen() {
   const settings = useBookStore((s) => s.settings);
   const addJobFromDraft = useBookStore((s) => s.addJobFromDraft);
   const [note, setNote] = useState("");
+  const [kind, setKind] = useState<NewKind>("invoice");
 
   const customerName = (id: string) => customers.find((c) => c.id === id)?.name ?? "";
   const grouped = useMemo(
@@ -34,11 +45,11 @@ export default function JobsScreen() {
     [jobs],
   );
 
-  const addJob = (status: JobStatus) => {
+  const create = () => {
     if (!note.trim()) return;
     const job = addJobFromDraft(
       parseQuickEntry(note, { ...settings, markupPercent: activeMarkupPercent(settings) }),
-      status,
+      kind === "quote" ? "quote" : "done",
     );
     setNote("");
     router.push(`/job/${job.id}`);
@@ -47,26 +58,35 @@ export default function JobsScreen() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Card>
-        <Text style={styles.title}>Quick job</Text>
-        <Text style={[styles.muted, { marginVertical: spacing.sm }]}>
-          Type or tap the 🎤 on your keyboard and say it, e.g.{"\n"}
-          "Mrs Smith, replaced kitchen tap, 1 hour, £85 parts"
+        <View style={{ flexDirection: "row", backgroundColor: colors.border, borderRadius: radius.md, padding: 3, marginBottom: spacing.md }}>
+          {(["invoice", "quote"] as NewKind[]).map((k) => (
+            <Pressable key={k} onPress={() => setKind(k)} accessibilityRole="tab" accessibilityState={{ selected: kind === k }}
+              style={{ flex: 1, paddingVertical: 8, borderRadius: radius.md - 2, alignItems: "center",
+                backgroundColor: kind === k ? colors.card : "transparent" }}>
+              <Text style={{ fontWeight: "700", color: kind === k ? colors.brand : colors.textMuted }}>
+                {k === "invoice" ? "Invoice" : "Quote"}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+        <Text style={styles.muted}>
+          {kind === "invoice" ? "Job done? " : "Pricing up a job? "}
+          Type or tap the 🎤 on your keyboard and say it, e.g.{"\n"}{EXAMPLES[kind].hint}
         </Text>
         <TextInput
           value={note}
           onChangeText={setNote}
           multiline
-          placeholder="Customer, what you did, time, £ parts"
+          placeholder={kind === "invoice" ? "Customer, what you did, time, £ parts" : "Customer, the work, time, £ parts"}
           placeholderTextColor={colors.textMuted}
-          style={[styles.input, { minHeight: 80, textAlignVertical: "top", marginBottom: spacing.md }]}
+          style={[styles.input, { minHeight: 80, textAlignVertical: "top", marginVertical: spacing.md }]}
         />
-        <Button label="Add finished job" onPress={() => addJob("done")} disabled={!note.trim()} />
-        <Button label="Save as quote" variant="secondary" onPress={() => addJob("quote")} disabled={!note.trim()} />
+        <Button label={EXAMPLES[kind].button} onPress={create} disabled={!note.trim()} />
       </Card>
 
       {grouped.length === 0 && (
         <Text style={[styles.muted, { textAlign: "center", marginTop: spacing.lg }]}>
-          No jobs yet. Add your first one above.
+          No jobs or quotes yet. Add your first one above.
         </Text>
       )}
 
@@ -74,7 +94,7 @@ export default function JobsScreen() {
         <View key={group.status}>
           <SectionTitle>{STATUS_LABELS[group.status]} ({group.jobs.length})</SectionTitle>
           {group.jobs.map((job) => (
-            <JobRow key={job.id} job={job} customerName={customerName(job.customerId)} />
+            <JobRow key={job.id} job={job} customerName={customerName(job.customerId)} settings={settings} />
           ))}
         </View>
       ))}
@@ -82,7 +102,16 @@ export default function JobsScreen() {
   );
 }
 
-function JobRow({ job, customerName }: { job: Job; customerName: string }) {
+function quoteLine(job: Job, settings: BusinessSettings): { text: string; colour: string } {
+  const state = quoteState(job, todayIso(), settings);
+  if (state.kind === "draft") return { text: "Not sent yet", colour: colors.warning };
+  if (state.kind === "expired") return { text: `Expired ${formatUkDate(state.validUntil)}`, colour: colors.danger };
+  return { text: `Sent · valid ${state.daysLeft} more day${state.daysLeft === 1 ? "" : "s"}`, colour: colors.textMuted };
+}
+
+function JobRow({ job, customerName, settings }: { job: Job; customerName: string; settings: BusinessSettings }) {
+  const quote = job.status === "quote" ? quoteLine(job, settings) : null;
+  const reference = job.invoiceNumber ?? (job.status === "quote" || job.status === "declined" ? quoteReference(job) : formatUkDate(job.date));
   return (
     <Pressable onPress={() => router.push(`/job/${job.id}`)}>
       <Card>
@@ -91,9 +120,15 @@ function JobRow({ job, customerName }: { job: Job; customerName: string }) {
           <Text style={styles.title}>{formatPence(jobTotalPence(job.lineItems))}</Text>
         </View>
         <View style={styles.row}>
-          <Text style={styles.muted}>{job.title}</Text>
-          <Text style={styles.muted}>{job.invoiceNumber ?? formatUkDate(job.date)}</Text>
+          <Text style={[styles.muted, { flex: 1 }]} numberOfLines={1}>{job.title}</Text>
+          <Text style={styles.muted}>{reference}</Text>
         </View>
+        {quote && <Text style={{ color: quote.colour, fontSize: 13, marginTop: spacing.xs }}>{quote.text}</Text>}
+        {job.quoteAcceptedOn && job.status === "booked" && (
+          <Text style={{ color: colors.success, fontSize: 13, marginTop: spacing.xs }}>
+            Quote accepted {formatUkDate(job.quoteAcceptedOn)}
+          </Text>
+        )}
       </Card>
     </Pressable>
   );

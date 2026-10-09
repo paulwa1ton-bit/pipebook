@@ -19,7 +19,9 @@ export interface LineItem {
   markupPercent?: number;
 }
 
-export type JobStatus = "quote" | "booked" | "done" | "invoiced" | "paid";
+// A quote moves to "booked" (or straight to "done") when accepted, or to
+// "declined". From then on it is the same job that becomes the invoice.
+export type JobStatus = "quote" | "declined" | "booked" | "done" | "invoiced" | "paid";
 
 export type ReminderKind = "boiler_service" | "landlord_gas_safety" | "unvented_service";
 
@@ -44,6 +46,10 @@ export interface Job {
   hourlyRatePence?: number;
   notes?: string;
   invoiceNumber?: string;
+  // Quote history, kept once a quote becomes a job/invoice.
+  quoteSentOn?: string;
+  quoteAcceptedOn?: string;
+  quotedTotalPence?: number;
   invoicedOn?: string;
   paidOn?: string;
   // Set when the work is something that comes round every year, so the job
@@ -80,6 +86,7 @@ export interface BusinessSettings {
   markupEnabled?: boolean;
   markupPercent?: number;
   paymentTermsDays: number;
+  quoteValidDays?: number;
   nextInvoiceNumber: number;
   bankDetails?: string;
   // Shown in the header of PDF invoices and quotes.

@@ -53,3 +53,13 @@ test("file names are filesystem-safe", () => {
   assert.equal(documentFileName("invoice", job, customer), "INV-0001_Mrs-O-Neil.pdf");
   assert.equal(documentFileName("quote", job, undefined), "QUO-ABCDEF.pdf");
 });
+
+test("an invoice from an accepted quote carries the quote reference; quote validity follows the setting", () => {
+  const fromQuote = buildDocumentHtml("invoice", { ...job, quoteAcceptedOn: "2026-10-01", quotedTotalPence: 131000 }, customer, settings);
+  assert.match(fromQuote, /Quote ref: QUO-ABCDEF/);
+  assert.doesNotMatch(buildDocumentHtml("invoice", job, customer, settings), /Quote ref/);
+  const quote = buildDocumentHtml("quote", { ...job, status: "quote", quoteSentOn: "2026-10-05" }, customer, { ...settings, quoteValidDays: 14 });
+  assert.match(quote, /Date: 05\/10\/2026/);
+  assert.match(quote, /Valid until: 19\/10\/2026/);
+  assert.match(quote, /valid for 14 days/);
+});

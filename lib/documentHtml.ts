@@ -1,13 +1,13 @@
 import type { BusinessSettings, Customer, Job } from "../types/models";
 import { formatPence, jobTotalPence, lineTotalPence } from "./money.ts";
 import { addDays, formatUkDate } from "./dates.ts";
+import { quoteValidDays, quoteValidUntil } from "./quotes.ts";
 
 // HTML for the PDF invoice/quote. expo-print renders it to a PDF on the phone,
 // so it must be self-contained (inline CSS, logo as a data URI, no web fonts).
 
 export type DocumentKind = "invoice" | "quote";
 
-export const QUOTE_VALID_DAYS = 30;
 
 export function quoteReference(job: Job): string {
   return `QUO-${job.id.replace(/-/g, "").slice(0, 6).toUpperCase()}`;
@@ -35,7 +35,7 @@ export function buildDocumentHtml(
   settings: BusinessSettings,
 ): string {
   const isInvoice = kind === "invoice";
-  const issued = isInvoice ? job.invoicedOn ?? job.date : job.date;
+  const issued = isInvoice ? job.invoicedOn ?? job.date : job.quoteSentOn ?? job.date;
   const reference = isInvoice ? job.invoiceNumber ?? "Draft" : quoteReference(job);
   const total = formatPence(jobTotalPence(job.lineItems));
   const paid = isInvoice && job.status === "paid";
@@ -91,7 +91,8 @@ export function buildDocumentHtml(
         Date: ${formatUkDate(issued)}<br/>
         ${isInvoice
           ? `Due: ${formatUkDate(addDays(issued, settings.paymentTermsDays))}`
-          : `Valid until: ${formatUkDate(addDays(issued, QUOTE_VALID_DAYS))}`}
+          : `Valid until: ${formatUkDate(quoteValidUntil(job, settings))}`}
+        ${isInvoice && job.quoteAcceptedOn ? `<br/>Quote ref: ${esc(quoteReference(job))}` : ""}
       </div>
     </div>
   </div>
@@ -118,7 +119,7 @@ export function buildDocumentHtml(
     ? `<div class="box"><div class="label">How to pay</div>${esc(settings.bankDetails)}<br/>Please use <b>${esc(reference)}</b> as the reference.</div>`
     : ""}
   ${!isInvoice
-    ? `<div class="box">This quote is valid for ${QUOTE_VALID_DAYS} days. Prices include parts and labour as listed. Any extra work found once started will be discussed with you before it goes ahead.</div>`
+    ? `<div class="box">This quote is valid for ${quoteValidDays(settings)} days. Prices include parts and labour as listed. Any extra work found once started will be discussed with you before it goes ahead.</div>`
     : ""}
 
   <div class="foot">Thank you for your business.</div>

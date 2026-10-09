@@ -2,12 +2,16 @@ import { useRef, useState } from "react";
 import { Keyboard, Pressable, ScrollView, Share, Text, View } from "react-native";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useBookStore } from "@/store/bookStore";
+import type { Job } from "@/types/models";
 import { buildInvoiceText } from "@/lib/invoice";
 import { REMINDER_LABELS } from "@/lib/reminders";
 import { sendDocument, SendMethod } from "@/lib/shareDocument";
 import { confirmAction, notify } from "@/lib/confirm";
-import type { DocumentKind } from "@/lib/documentHtml";
-import { Button, Card, Field, styles } from "@/components/ui";
+import { quoteReference, type DocumentKind } from "@/lib/documentHtml";
+import { acceptQuotePatch, changeSinceQuote, quoteState } from "@/lib/quotes";
+import { formatUkDate, todayIso } from "@/lib/dates";
+import { formatPence } from "@/lib/money";
+import { Button, Card, Field, SectionTitle, styles } from "@/components/ui";
 import { ChargesEditor, ChargesEditorHandle } from "@/components/ChargesEditor";
 import { syncNow } from "@/lib/cloudSync";
 import { colors, spacing } from "@/constants/theme";
@@ -27,6 +31,8 @@ export default function JobScreen() {
 
   const sendPdf = async (kind: DocumentKind, method: SendMethod) => {
     if (kind === "invoice") markInvoiced(job.id);
+    // Validity runs from the latest send.
+    if (kind === "quote") updateJob(job.id, { quoteSentOn: todayIso() });
     try {
       // Read the customer fresh too, in case the email was typed just now.
       const currentCustomer = useBookStore.getState().customers.find((c) => c.id === job.customerId);
@@ -77,6 +83,15 @@ export default function JobScreen() {
     setTimeout(() => router.back(), 700);
   };
 
+  const accept = (workDone: boolean) => updateJob(job.id, acceptQuotePatch(latest(), todayIso(), workDone));
+
+  const decline = async () => {
+    if (await confirmAction("Mark quote as declined?", "It moves to Declined quotes. You can reopen it later.", "Declined",
+      { destructive: false })) {
+      updateJob(job.id, { status: "declined" });
+    }
+  };
+
   const confirmDelete = async () => {
     if (await confirmAction("Delete job?", "This can't be undone.", "Delete")) {
       deleteJob(job.id);
@@ -89,7 +104,7 @@ export default function JobScreen() {
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Stack.Screen
           options={{
-            title: job.invoiceNumber ?? (job.status === "quote" ? "Quote" : "Job"),
+            title: job.invoiceNumber ?? (job.status === "quote" || job.status === "declined" ? quoteReference(job) : "Job"),
             headerRight: () => (
               <Pressable onPress={save} hitSlop={10} style={{ paddingHorizontal: spacing.sm }} accessibilityRole="button">
                 <Text style={{ color: colors.textOnDark, fontSize: 16, fontWeight: "700" }}>Save</Text>
@@ -107,7 +122,7 @@ export default function JobScreen() {
             onChangeText={(email) => customer && updateCustomer(customer.id, { email })} />
           <Field label="Address" value={customer?.address ?? ""}
             onChangeText={(address) => customer && updateCustomer(customer.id, { address })} />
-          <Field label={job.status === "quote" ? "Proposed work" : "Work done"} value={job.title} onChangeText={(title) => updateJob(job.id, { title })} />
+          <Field label={job.status === "quote" || job.status === "declined" ? "Proposed work" : "Work done"} value={job.title} onChangeText={(title) => updateJob(job.id, { title })} />
           {job.reminderKind && (
             <Text style={[styles.muted, { color: colors.brand }]}>
               🔔 {REMINDER_LABELS[job.reminderKind]} reminder will be set for 12 months' time
@@ -115,21 +130,27 @@ export default function JobScreen() {
           )}
         </Card>
 
+        <QuoteStatusCard job={job} />
+
         <ChargesEditor job={job} ref={charges} />
 
         <Button label="Save job" onPress={save} />
 
         {job.status === "quote" && (
           <>
-            <Button label="Email quote (PDF)" onPress={() => sendPdf("quote", "email")} />
+            <Button label={job.quoteSentOn ? "Email quote again (PDF)" : "Email quote (PDF)"} onPress={() => sendPdf("quote", "email")} />
             <Button label="Share quote PDF (WhatsApp, text...)" variant="secondary" onPress={() => sendPdf("quote", "share")} />
-            <Button label="Quote accepted - book it in" variant="secondary"
-              onPress={() => updateJob(job.id, { status: "booked" })} />
+            <SectionTitle>Customer's answer</SectionTitle>
+            <Button label="Accepted - book it in" variant="secondary" onPress={() => accept(false)} />
+            <Button label="Accepted - work done, create invoice" variant="secondary" onPress={() => accept(true)} />
+            <Button label="Declined" variant="secondary" onPress={decline} />
           </>
         )}
-        {(job.status === "quote" || job.status === "booked") && (
-          <Button label="Mark job done" variant={job.status === "quote" ? "secondary" : "primary"}
-            onPress={() => updateJob(job.id, { status: "done" })} />
+        {job.status === "declined" && (
+          <Button label="Reopen quote" variant="secondary" onPress={() => updateJob(job.id, { status: "quote" })} />
+        )}
+        {job.status === "booked" && (
+          <Button label="Work done - create invoice" onPress={() => updateJob(job.id, { status: "done", date: todayIso() })} />
         )}
         {(job.status === "done" || job.status === "invoiced") && (
           <>
@@ -158,5 +179,50 @@ export default function JobScreen() {
         </View>
       )}
     </View>
+  );
+}
+
+/** Where a quote stands, or for an accepted quote, how the bill compares with it. */
+function QuoteStatusCard({ job }: { job: Job }) {
+  const settings = useBookStore((s) => s.settings);
+  const ref = quoteReference(job);
+
+  if (job.status === "quote") {
+    const state = quoteState(job, todayIso(), settings);
+    const [text, colour] =
+      state.kind === "draft" ? ["Not sent to the customer yet", colors.warning]
+        : state.kind === "expired" ? [`Expired on ${formatUkDate(state.validUntil)} - send it again to renew`, colors.danger]
+          : [`Sent ${formatUkDate(job.quoteSentOn!)} · valid until ${formatUkDate(state.validUntil)} (${state.daysLeft} days)`, colors.textMuted];
+    return (
+      <Card>
+        <Text style={styles.title}>Quote {ref}</Text>
+        <Text style={{ color: colour, marginTop: spacing.xs }}>{text}</Text>
+      </Card>
+    );
+  }
+
+  if (job.status === "declined") {
+    return (
+      <Card>
+        <Text style={styles.title}>Quote {ref} - declined</Text>
+        <Text style={[styles.muted, { marginTop: spacing.xs }]}>Reopen it if the customer changes their mind.</Text>
+      </Card>
+    );
+  }
+
+  const change = changeSinceQuote(job);
+  if (!job.quoteAcceptedOn || change === null) return null;
+  return (
+    <Card>
+      <Text style={styles.title}>From quote {ref}</Text>
+      <Text style={[styles.muted, { marginTop: spacing.xs }]}>
+        Accepted {formatUkDate(job.quoteAcceptedOn)} · quoted {formatPence(job.quotedTotalPence!)}
+      </Text>
+      {change !== 0 && (
+        <Text style={{ color: colors.warning, marginTop: spacing.xs, fontWeight: "600" }}>
+          {formatPence(Math.abs(change))} {change > 0 ? "more" : "less"} than quoted
+        </Text>
+      )}
+    </Card>
   );
 }

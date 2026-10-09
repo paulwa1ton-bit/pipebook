@@ -1,7 +1,8 @@
 import type { BusinessSettings, Customer, Job } from "../types/models";
 import { formatPence, jobTotalPence } from "./money.ts";
 import { addDays, formatUkDate } from "./dates.ts";
-import { QUOTE_VALID_DAYS, quoteReference, type DocumentKind } from "./documentHtml.ts";
+import { quoteReference, type DocumentKind } from "./documentHtml.ts";
+import { quoteValidUntil } from "./quotes.ts";
 
 // Subject and body for the email that carries an invoice/quote PDF. Short and
 // plain on purpose: the PDF has the detail, the email just has to say what it
@@ -34,7 +35,7 @@ export function buildDocumentEmail(
 
   if (kind === "quote") {
     const ref = quoteReference(job);
-    const validUntil = formatUkDate(addDays(job.date, QUOTE_VALID_DAYS));
+    const validUntil = formatUkDate(quoteValidUntil(job, settings));
     return {
       subject: `Quote ${ref} - ${work}${business}`,
       body: [
