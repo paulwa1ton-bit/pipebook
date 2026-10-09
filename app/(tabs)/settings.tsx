@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import { Image, ScrollView, Switch, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, Switch, Text, View } from "react-native";
+import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { useBookStore } from "@/store/bookStore";
+import { usePriceListStore } from "@/store/priceListStore";
 import { formatPence, poundsToPence } from "@/lib/money";
 import { DEFAULT_MARKUP_PERCENT, applyMarkup } from "@/lib/pricing";
 import { notify } from "@/lib/confirm";
@@ -23,6 +25,7 @@ async function pickLogo(): Promise<string | null> {
 export default function SettingsScreen() {
   const settings = useBookStore((s) => s.settings);
   const updateSettings = useBookStore((s) => s.updateSettings);
+  const priceListCount = usePriceListStore((s) => s.lists.length);
   const [hourly, setHourly] = useState((settings.hourlyRatePence / 100).toFixed(2));
   const [callout, setCallout] = useState((settings.calloutPence / 100).toFixed(2));
 
@@ -96,6 +99,19 @@ export default function SettingsScreen() {
           onChangeText={(v) => updateSettings({ paymentTermsDays: parseInt(v, 10) || 0 })} />
         <Text style={styles.muted}>You can also change the hourly rate on any individual job.</Text>
       </Card>
+
+      <SectionTitle>Parts & price lists</SectionTitle>
+      <Pressable onPress={() => router.push("/parts")}>
+        <Card style={{ flexDirection: "row", alignItems: "center" }}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Supplier price lists</Text>
+            <Text style={styles.muted}>
+              {priceListCount === 0 ? "Import your merchant's price list" : `${priceListCount} imported`}
+            </Text>
+          </View>
+          <Text style={{ color: colors.textMuted, fontSize: 22 }}>›</Text>
+        </Card>
+      </Pressable>
 
       <SectionTitle>Commission on parts</SectionTitle>
       <Card>

@@ -1,6 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, Switch, Text, TextInput, View } from "react-native";
 import { useBookStore } from "@/store/bookStore";
+import { usePriceListStore } from "@/store/priceListStore";
+import { PartSuggestion, recentParts, searchParts } from "@/lib/partsSearch";
+import { formatUkDate } from "@/lib/dates";
 import { formatPence, jobTotalPence, lineTotalPence, poundsToPence } from "@/lib/money";
 import {
   DEFAULT_MARKUP_PERCENT, activeMarkupPercent, applyMarkup, hourlyLabourLine, jobHourlyRate,
@@ -60,6 +63,21 @@ export function ChargesEditor({ job }: { job: Job }) {
   const [addCommission, setAddCommission] = useState(settings.markupEnabled ?? false);
   const newMarkup = settings.markupPercent ?? DEFAULT_MARKUP_PERCENT;
 
+  // Part suggestions from past jobs and imported price lists.
+  const jobs = useBookStore((s) => s.jobs);
+  const priceLists = usePriceListStore((s) => s.lists);
+  const recent = useMemo(() => recentParts(jobs), [jobs]);
+  const [pickedName, setPickedName] = useState<string | null>(null);
+  const suggestions = useMemo(
+    () => (kind === "parts" && desc !== pickedName ? searchParts(desc, recent, priceLists) : []),
+    [kind, desc, pickedName, recent, priceLists],
+  );
+  const pickSuggestion = (s: PartSuggestion) => {
+    setDesc(s.name);
+    setPickedName(s.name);
+    setAmount(penceToInput(s.costPence));
+  };
+
   const saveRate = () => {
     const pence = poundsToPence(rateInput);
     if (pence === null || pence === rate) return setRateInput(penceToInput(rate));
@@ -88,6 +106,7 @@ export function ChargesEditor({ job }: { job: Job }) {
     setDesc("");
     setAmount("");
     setHours("");
+    setPickedName(null);
   };
 
   const toggleLineCommission = (item: LineItem) =>
@@ -177,7 +196,26 @@ export function ChargesEditor({ job }: { job: Job }) {
         ) : (
           <>
             <Field label="Item" value={desc} onChangeText={setDesc}
-              placeholder={kind === "parts" ? "e.g. Worcester Bosch 30i boiler" : "e.g. Skip hire"} />
+              placeholder={kind === "parts" ? "Start typing, e.g. 30i combi" : "e.g. Skip hire"} />
+            {suggestions.length > 0 && (
+              <View style={{ marginTop: -spacing.sm, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border,
+                borderRadius: radius.sm, overflow: "hidden" }}>
+                {suggestions.map((sug, i) => (
+                  <Pressable key={sug.key} onPress={() => pickSuggestion(sug)}
+                    style={({ pressed }) => [{ padding: spacing.sm, backgroundColor: pressed ? colors.border : colors.card },
+                      i > 0 && { borderTopWidth: 1, borderColor: colors.border }]}>
+                    <View style={styles.row}>
+                      <Text style={{ flex: 1, color: colors.text }} numberOfLines={2}>{sug.name}</Text>
+                      <Text style={[styles.title, { marginLeft: spacing.sm }]}>{formatPence(sug.costPence)}</Text>
+                    </View>
+                    <Text style={[styles.muted, { fontSize: 12 }]}>
+                      {sug.source === "recent" ? `Used before · ${formatUkDate(sug.detail)}` : sug.detail}
+                      {sug.sku ? ` · ${sug.sku}` : ""}{sug.unit ? ` · per ${sug.unit}` : ""}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
             <Field label={kind === "parts" ? "What you paid (£)" : "Price (£)"} value={amount}
               onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0.00" />
             {kind === "parts" && (

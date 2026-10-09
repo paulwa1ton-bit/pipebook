@@ -3,6 +3,8 @@ import { isFirebaseConfigured } from "@/lib/firebase";
 import { CloudWrites, CollectionName, pullAll, pushChanges } from "@/lib/cloudApi";
 import { mergeCollection, mergeSettings, reconcileAfterSync, toPendingMap } from "@/lib/syncMerge";
 import { useBookStore, SyncedCollection } from "@/store/bookStore";
+import { usePriceListStore } from "@/store/priceListStore";
+import { syncPriceLists } from "@/lib/priceListSync";
 import type { SyncedRecord } from "@/types/models";
 
 const COLLECTIONS: SyncedCollection[] = ["customers", "jobs", "expenses"];
@@ -85,6 +87,8 @@ async function runSync(): Promise<void> {
         : settingsMerge.merged,
       settingsDirty: settingsChangedMidSync,
     });
+
+    await syncPriceLists(account.uid);
   } catch (err) {
     console.warn("[cloudSync] sync failed:", err);
     useBookStore.getState().setSyncStatus("error", describeSyncError(err));
@@ -99,7 +103,13 @@ export function scheduleSync(): void {
 
 export function pendingChangeCount(): number {
   const { pending, settingsDirty } = useBookStore.getState();
-  return COLLECTIONS.reduce((n, name) => n + Object.keys(pending[name]).length, 0) + (settingsDirty ? 1 : 0);
+  const lists = usePriceListStore.getState();
+  return (
+    COLLECTIONS.reduce((n, name) => n + Object.keys(pending[name]).length, 0) +
+    (settingsDirty ? 1 : 0) +
+    lists.pendingUpload.length +
+    lists.pendingDelete.length
+  );
 }
 
 /** Back up shortly after any change, and whenever the app comes to the foreground. */
@@ -107,12 +117,16 @@ export function startAutoSync(): () => void {
   const unsubStore = useBookStore.subscribe((state, prev) => {
     if (state.pending !== prev.pending || state.settings !== prev.settings) scheduleSync();
   });
+  const unsubLists = usePriceListStore.subscribe((state, prev) => {
+    if (state.pendingUpload !== prev.pendingUpload || state.pendingDelete !== prev.pendingDelete) scheduleSync();
+  });
   const appStateSub = AppState.addEventListener("change", (s) => {
     if (s === "active") void syncNow();
   });
   void syncNow();
   return () => {
     unsubStore();
+    unsubLists();
     appStateSub.remove();
   };
 }

@@ -75,6 +75,10 @@ npm test
 | `lib/reminders.ts` | Builds 12-month repeat-work reminders |
 | `lib/pricing.ts` | Hourly labour, per-job rates and commission on parts |
 | `components/ChargesEditor.tsx` | Job charges: rate, hours, commission, add a charge |
+| `app/parts.tsx` | Import / manage supplier price lists |
+| `lib/priceList.ts` | CSV parsing, header/column detection, VAT on import |
+| `lib/partsSearch.ts` | "Used before" parts and search across price lists |
+| `lib/priceListSync.ts`, `store/priceListStore.ts` | Price list storage and backup (chunked) |
 | `lib/documentHtml.ts` | Invoice / quote PDF layout |
 | `lib/shareDocument.ts` | Renders the PDF and opens the share sheet |
 | `lib/cloudSync.ts`, `lib/syncMerge.ts` | Cloud backup and merge rules |

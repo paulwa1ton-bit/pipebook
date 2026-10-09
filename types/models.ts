@@ -91,6 +91,28 @@ export interface BusinessSettings {
   updatedAt: string;
 }
 
+// A supplier price list the plumber imported (CSV/Excel from their merchant).
+// Prices are what the plumber pays per unit, after any VAT adjustment at import.
+export interface PriceListItem {
+  name: string;
+  sku?: string;
+  costPence: number;
+  unit?: string;
+}
+
+export interface PriceListMeta {
+  id: string;
+  supplier: string;
+  itemCount: number;
+  importedAt: string;
+  vatAdded: boolean;
+  fileName?: string;
+}
+
+export interface PriceList extends PriceListMeta {
+  items: PriceListItem[];
+}
+
 export interface SyncedRecord {
   id: string;
   updatedAt: string;

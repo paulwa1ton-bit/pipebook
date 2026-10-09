@@ -1,6 +1,7 @@
 import { signInWithEmail, signOutFirebase, signUpWithEmail, SignedInUser } from "@/lib/auth";
 import { pendingChangeCount, syncNow } from "@/lib/cloudSync";
 import { useBookStore } from "@/store/bookStore";
+import { usePriceListStore } from "@/store/priceListStore";
 
 /**
  * Links this phone's book to the signed-in account. If the phone has never
@@ -10,7 +11,10 @@ import { useBookStore } from "@/store/bookStore";
  */
 export function attachAccount(user: SignedInUser): Promise<void> {
   const store = useBookStore.getState();
-  if (store.lastSyncedUid !== user.uid) store.markEverythingPending();
+  if (store.lastSyncedUid !== user.uid) {
+    store.markEverythingPending();
+    usePriceListStore.getState().markAllPending();
+  }
   store.setAccount(user);
   return syncNow();
 }
@@ -33,4 +37,5 @@ export async function prepareLogOut(): Promise<number> {
 export async function logOut(): Promise<void> {
   await signOutFirebase();
   useBookStore.getState().clearLocalData();
+  usePriceListStore.getState().clear();
 }
