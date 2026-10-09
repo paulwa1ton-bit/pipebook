@@ -10,7 +10,8 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.pipebook.app",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "PipeBook uses your photo library so you can add your business logo to invoices and quotes."
+        "NSPhotoLibraryUsageDescription": "PipeBook uses your photo library so you can add your business logo to invoices and quotes.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
