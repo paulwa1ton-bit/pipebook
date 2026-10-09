@@ -8,6 +8,7 @@ import {
   ColumnMapping, MAX_PRICE_LIST_ITEMS, UK_VAT_PERCENT, buildPriceListItems, columnHeaders, detectColumns,
 } from "@/lib/priceList";
 import { recentParts } from "@/lib/partsSearch";
+import { PART_CATEGORIES, PartCategory, STANDARD_PARTS } from "@/data/standardParts";
 import { formatPence } from "@/lib/money";
 import { formatUkDate } from "@/lib/dates";
 import { confirmAction, notify } from "@/lib/confirm";
@@ -156,8 +157,9 @@ export default function PartsScreen() {
       <Card>
         <Text style={styles.title}>Your parts</Text>
         <Text style={[styles.muted, { marginTop: spacing.xs }]}>
-          When you add a part to a job, start typing and pick from parts you've used before ({usedCount} so far) or from
-          your suppliers' price lists. Your price fills in automatically, with your commission if it's switched on.
+          When you add a part to a job, start typing and pick from parts you've used before ({usedCount} so far), your
+          suppliers' price lists, or {STANDARD_PARTS.length} standard parts built into PipeBook. Your price fills in
+          automatically (with your commission if it's switched on); for standard parts you add the price yourself.
         </Text>
       </Card>
 
@@ -188,7 +190,34 @@ export default function PartsScreen() {
           Importing a new list for the same supplier replaces the old one.
         </Text>
       )}
+
+      <SectionTitle>Standard parts</SectionTitle>
+      <Text style={[styles.muted, { marginBottom: spacing.md }]}>
+        Common pipe, fittings, valves, boilers and more, already in the app. No prices: you add yours on the job.
+      </Text>
+      {PART_CATEGORIES.map((category) => (
+        <StandardCategory key={category} category={category} />
+      ))}
     </ScrollView>
+  );
+}
+
+function StandardCategory({ category }: { category: PartCategory }) {
+  const [open, setOpen] = useState(false);
+  const parts = useMemo(() => STANDARD_PARTS.filter((p) => p.category === category), [category]);
+  return (
+    <Card style={{ paddingVertical: spacing.sm, marginBottom: spacing.sm }}>
+      <Pressable onPress={() => setOpen(!open)} style={[styles.row, { paddingVertical: spacing.xs }]}>
+        <Text style={styles.title}>{category}</Text>
+        <Text style={styles.muted}>{parts.length}  {open ? "▴" : "▾"}</Text>
+      </Pressable>
+      {open && parts.map((p) => (
+        <View key={p.name} style={{ paddingVertical: spacing.xs, borderTopWidth: 1, borderColor: colors.border }}>
+          <Text style={{ color: colors.text }}>{p.name}</Text>
+          <Text style={[styles.muted, { fontSize: 12 }]}>{p.description}</Text>
+        </View>
+      ))}
+    </Card>
   );
 }
 

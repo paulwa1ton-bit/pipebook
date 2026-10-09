@@ -3,6 +3,7 @@ import { Pressable, Switch, Text, TextInput, View } from "react-native";
 import { useBookStore } from "@/store/bookStore";
 import { usePriceListStore } from "@/store/priceListStore";
 import { PartSuggestion, recentParts, searchParts } from "@/lib/partsSearch";
+import { STANDARD_PARTS } from "@/data/standardParts";
 import { formatUkDate } from "@/lib/dates";
 import { formatPence, jobTotalPence, lineTotalPence, poundsToPence } from "@/lib/money";
 import {
@@ -69,13 +70,14 @@ export function ChargesEditor({ job }: { job: Job }) {
   const recent = useMemo(() => recentParts(jobs), [jobs]);
   const [pickedName, setPickedName] = useState<string | null>(null);
   const suggestions = useMemo(
-    () => (kind === "parts" && desc !== pickedName ? searchParts(desc, recent, priceLists) : []),
+    () => (kind === "parts" && desc !== pickedName ? searchParts(desc, recent, priceLists, STANDARD_PARTS) : []),
     [kind, desc, pickedName, recent, priceLists],
   );
   const pickSuggestion = (s: PartSuggestion) => {
     setDesc(s.name);
     setPickedName(s.name);
-    setAmount(penceToInput(s.costPence));
+    // Standard parts have no price: leave the box empty for the plumber to fill in.
+    setAmount(s.costPence !== undefined ? penceToInput(s.costPence) : "");
   };
 
   const saveRate = () => {
@@ -206,7 +208,11 @@ export function ChargesEditor({ job }: { job: Job }) {
                       i > 0 && { borderTopWidth: 1, borderColor: colors.border }]}>
                     <View style={styles.row}>
                       <Text style={{ flex: 1, color: colors.text }} numberOfLines={2}>{sug.name}</Text>
-                      <Text style={[styles.title, { marginLeft: spacing.sm }]}>{formatPence(sug.costPence)}</Text>
+                      {sug.costPence !== undefined ? (
+                        <Text style={[styles.title, { marginLeft: spacing.sm }]}>{formatPence(sug.costPence)}</Text>
+                      ) : (
+                        <Text style={[styles.muted, { marginLeft: spacing.sm, fontSize: 12 }]}>add price</Text>
+                      )}
                     </View>
                     <Text style={[styles.muted, { fontSize: 12 }]}>
                       {sug.source === "recent" ? `Used before · ${formatUkDate(sug.detail)}` : sug.detail}

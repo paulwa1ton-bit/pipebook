@@ -1,15 +1,18 @@
 import type { Job, PriceList } from "../types/models";
+import type { StandardPart } from "../data/standardParts";
 
 // Suggestions for the "add a part" box: parts the plumber has charged before
-// (worked out from their jobs, so nothing extra to store or back up) and
-// items from imported merchant price lists.
+// (worked out from their jobs, so nothing extra to store or back up), items
+// from imported merchant price lists, and a built-in list of standard parts
+// (no price - the plumber fills it in).
 
 export interface PartSuggestion {
   key: string;
   name: string;
-  costPence: number;
-  source: "recent" | "priceList";
-  // Recent: the date last used. Price list: the supplier name.
+  // Undefined for standard parts, which carry no price.
+  costPence?: number;
+  source: "recent" | "priceList" | "standard";
+  // Recent: the date last used. Price list: the supplier name. Standard: a description.
   detail: string;
   sku?: string;
   unit?: string;
@@ -48,10 +51,18 @@ export function recentParts(jobs: Job[]): PartSuggestion[] {
 
 /**
  * Every word typed must appear in the name or code ("30i combi" finds
- * "Worcester Bosch 30i Combi"). Recent parts rank first, then shorter names
- * (closer matches) first; an exact product code beats everything.
+ * "Worcester Bosch 30i Combi"). Recent parts rank first, then price lists,
+ * then standard parts; shorter names (closer matches) first within each, and
+ * an exact product code beats everything. A standard part is left out when
+ * the plumber already has a priced part of the same name.
  */
-export function searchParts(query: string, recent: PartSuggestion[], lists: PriceList[], limit = 8): PartSuggestion[] {
+export function searchParts(
+  query: string,
+  recent: PartSuggestion[],
+  lists: PriceList[],
+  standard: StandardPart[] = [],
+  limit = 8,
+): PartSuggestion[] {
   const words = normalise(query).split(" ").filter(Boolean);
   if (words.length === 0 || query.trim().length < 2) return [];
   const exactCode = query.trim().toLowerCase();
@@ -83,6 +94,14 @@ export function searchParts(query: string, recent: PartSuggestion[], lists: Pric
         score: (codeHit ? 2000 : 500) - item.name.length,
       });
     }
+  }
+  const priced = new Set(scored.map(({ s }) => normalise(s.name)));
+  for (const p of standard) {
+    if (!matches(p.name) || priced.has(normalise(p.name))) continue;
+    scored.push({
+      s: { key: `standard:${p.name}`, name: p.name, source: "standard", detail: p.description },
+      score: 200 - p.name.length,
+    });
   }
   return scored.sort((a, b) => b.score - a.score).slice(0, limit).map(({ s }) => s);
 }
