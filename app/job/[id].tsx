@@ -1,12 +1,12 @@
 import { useRef, useState } from "react";
-import { Keyboard, Pressable, ScrollView, Share, Text, View } from "react-native";
+import { Keyboard, Platform, Pressable, ScrollView, Share, Text, View } from "react-native";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useBookStore } from "@/store/bookStore";
 import type { Job } from "@/types/models";
 import { buildInvoiceText } from "@/lib/invoice";
 import { REMINDER_LABELS } from "@/lib/reminders";
-import { sendDocument, SendMethod } from "@/lib/shareDocument";
-import { confirmAction, notify } from "@/lib/confirm";
+import { emailFillsIn, sendDocument, SendMethod } from "@/lib/shareDocument";
+import { confirmAction, notify, showInfo } from "@/lib/confirm";
 import { quoteReference, type DocumentKind } from "@/lib/documentHtml";
 import { acceptQuotePatch, changeSinceQuote, quoteState } from "@/lib/quotes";
 import { formatUkDate, todayIso } from "@/lib/dates";
@@ -38,6 +38,14 @@ export default function JobScreen() {
     try {
       // Read the customer fresh too, in case the email was typed just now.
       const currentCustomer = useBookStore.getState().customers.find((c) => c.id === job.customerId);
+      if (method === "email" && Platform.OS === "android" && !emailFillsIn()) {
+        // Explain before the share sheet covers the screen.
+        await showInfo(
+          "Pick your email app",
+          "The PDF will be attached. Your message is copied ready to paste: in the email, press and hold, then tap Paste." +
+            (currentCustomer?.email ? ` Send it to ${currentCustomer.email}.` : ""),
+        );
+      }
       await sendDocument(kind, latest(), currentCustomer, settings, method);
     } catch (err) {
       console.warn("[job] PDF send failed:", err);

@@ -20,3 +20,14 @@ export function notify(title: string, message: string): void {
   if (Platform.OS === "web") window.alert(`${title}\n\n${message}`);
   else Alert.alert(title, message);
 }
+
+/** A message with a single OK button that waits until it's dismissed. */
+export function showInfo(title: string, message: string): Promise<void> {
+  if (Platform.OS === "web") {
+    window.alert(`${title}\n\n${message}`);
+    return Promise.resolve();
+  }
+  return new Promise((resolve) =>
+    Alert.alert(title, message, [{ text: "OK", onPress: () => resolve() }], { cancelable: true, onDismiss: () => resolve() }),
+  );
+}

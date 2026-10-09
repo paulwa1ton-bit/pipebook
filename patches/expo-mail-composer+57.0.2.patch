@@ -1,0 +1,30 @@
+diff --git a/node_modules/expo-mail-composer/android/src/main/java/expo/modules/mailcomposer/MailIntentBuilder.kt b/node_modules/expo-mail-composer/android/src/main/java/expo/modules/mailcomposer/MailIntentBuilder.kt
+index 645d0ec..d3125f6 100644
+--- a/node_modules/expo-mail-composer/android/src/main/java/expo/modules/mailcomposer/MailIntentBuilder.kt
++++ b/node_modules/expo-mail-composer/android/src/main/java/expo/modules/mailcomposer/MailIntentBuilder.kt
+@@ -1,6 +1,7 @@
+ package expo.modules.mailcomposer
+ 
+ import android.app.Application
++import android.content.ClipData
+ import android.content.ComponentName
+ import android.content.Intent
+ import android.net.Uri
+@@ -86,6 +87,17 @@ class MailIntentBuilder(
+         }.toCollection(ArrayList())
+ 
+         mailIntent.putParcelableArrayListExtra(intentName, attachments)
++
++        // PipeBook patch: the read grant was only set on the chooser, so the
++        // chosen mail app (e.g. Gmail) couldn't open the file and reported
++        // "couldn't attach". Grant it on each mail intent and expose the files
++        // as ClipData so Android hands the permission to whichever app is picked.
++        if (attachments.isNotEmpty()) {
++          val clip = ClipData.newRawUri(null, attachments[0])
++          attachments.drop(1).forEach { clip.addItem(ClipData.Item(it)) }
++          mailIntent.clipData = clip
++          mailIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
++        }
+       }
+     } catch (error: IllegalArgumentException) {
+       Log.e("ExpoMailComposer", "Illegal argument:", error)
