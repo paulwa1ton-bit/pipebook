@@ -16,9 +16,10 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: colors.textMuted,
       }}
     >
-      <Tabs.Screen name="index" options={{ title: "Jobs", tabBarIcon: () => <TabIcon symbol="🔧" /> }} />
+      <Tabs.Screen name="index" options={{ title: "Home", headerShown: false, tabBarIcon: () => <TabIcon symbol="🏠" /> }} />
+      <Tabs.Screen name="jobs" options={{ title: "Jobs", tabBarIcon: () => <TabIcon symbol="🔧" /> }} />
       <Tabs.Screen name="customers" options={{ title: "Customers", tabBarIcon: () => <TabIcon symbol="👥" /> }} />
-      <Tabs.Screen name="reminders" options={{ title: "Reminders", tabBarIcon: () => <TabIcon symbol="🔔" /> }} />
+      <Tabs.Screen name="reminders" options={{ title: "Reminders", href: null }} />
       <Tabs.Screen name="money" options={{ title: "Money & Tax", tabBarIcon: () => <TabIcon symbol="💷" /> }} />
       <Tabs.Screen name="settings" options={{ title: "Settings", tabBarIcon: () => <TabIcon symbol="⚙️" /> }} />
     </Tabs>

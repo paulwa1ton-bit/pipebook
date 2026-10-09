@@ -59,7 +59,7 @@ function ExistingCustomer({ id }: { id: string }) {
   if (!customer) return <Text style={[styles.muted, { padding: spacing.md }]}>Customer not found.</Text>;
 
   // Return to the existing Jobs tab (rather than stacking another copy) with the customer chosen.
-  const startNew = (kind: "invoice" | "quote") => router.dismissTo({ pathname: "/", params: { customerId: customer.id, kind } });
+  const startNew = (kind: "invoice" | "quote") => router.dismissTo({ pathname: "/jobs", params: { customerId: customer.id, kind } });
 
   const remove = async () => {
     if (jobs.length > 0) {
